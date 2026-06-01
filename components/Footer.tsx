@@ -1,80 +1,75 @@
 "use client";
-import React from 'react';
-import { Globe, Globe2 } from 'lucide-react';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Subscribing:", email);
+  };
+
   return (
-    <footer className="mt-20 w-full">
-      {/* Back to Top Button */}
+    <footer className="w-full bg-black text-white font-sans antialiased border-t border-neutral-900 select-none mt-32">
+      
+      {/* BACK TO TOP BUTTON */}
       <button 
         onClick={scrollToTop}
-        className="w-full bg-[#37475a] hover:bg-[#485769] text-white py-4 text-xs font-bold transition-colors"
+        className="w-full bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-white py-4 text-[9px] font-black uppercase tracking-[4px] transition-all duration-300 border-b border-neutral-900"
       >
-        Back to top
+        Back to top ↑
       </button>
 
-      {/* Main Footer Links */}
-      <div className="bg-[#232f3e] text-white py-14">
-        <div className="max-w-[1000px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-sm">
-          <div className="space-y-3">
-            <h4 className="font-bold text-base mb-4">Get to Know Us</h4>
-            <p className="text-gray-300 hover:underline cursor-pointer">About MESY</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Careers</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Press Releases</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">MESY Science</p>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-bold text-base mb-4">Connect with Us</h4>
-            <p className="text-gray-300 hover:underline cursor-pointer">Facebook</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Twitter</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Instagram</p>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-bold text-base mb-4">Make Money with Us</h4>
-            <p className="text-gray-300 hover:underline cursor-pointer">Sell on MESY</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Supply to MESY</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Become an Affiliate</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Advertise Your Products</p>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-bold text-base mb-4">Let Us Help You</h4>
-            <p className="text-gray-300 hover:underline cursor-pointer">Your Account</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Returns Centre</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">100% Purchase Protection</p>
-            <p className="text-gray-300 hover:underline cursor-pointer">Help</p>
+      {/* NEWSLETTER ROW */}
+      <div className="w-full max-w-[1440px] mx-auto px-6 md:px-12 pt-20 pb-12 border-b border-neutral-900">
+        <div className="max-w-xl">
+          <h3 className="text-[11px] font-black tracking-[3px] uppercase text-white mb-6">
+            Sign up for Mesy newsletter
+          </h3>
+          <form onSubmit={handleSubscribe} className="relative flex items-center border-b border-white py-2.5">
+            <input 
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ENTER YOUR EMAIL"
+              className="w-full bg-transparent text-xs font-bold tracking-[2px] uppercase focus:outline-none placeholder:text-neutral-700 text-white pr-10"
+              required
+            />
+            <button type="submit" className="absolute right-0 text-neutral-400 hover:text-white transition-colors">
+              <ArrowRight size={16} />
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* LINKS MATRIX */}
+      <div className="max-w-[1440px] mx-auto px-6 md:px-12 py-16 grid grid-cols-2 md:grid-cols-4 gap-12 text-left">
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">Support</h4>
+          <div className="flex flex-col gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px]">
+            <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping Info</Link>
+            <Link href="/refund-policy" className="hover:text-white transition-colors">Returns & Refunds</Link>
           </div>
         </div>
 
-        {/* Logo & Language Area */}
-        <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col items-center gap-6">
-          <div className="text-3xl font-serif italic font-black tracking-tighter">MESY.</div>
-          <div className="flex gap-4">
-             <div className="flex items-center gap-2 border border-gray-600 px-4 py-1.5 rounded-sm text-xs cursor-pointer hover:border-white">
-                <Globe size={14} /> <span>English</span>
-             </div>
-             <div className="flex items-center gap-2 border border-gray-600 px-4 py-1.5 rounded-sm text-xs cursor-pointer hover:border-white">
-                <span className="text-[#C5A358] font-bold">₹</span> <span>INR - Indian Rupee</span>
-             </div>
+        <div className="space-y-4">
+          <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">Legal</h4>
+          <div className="flex flex-col gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px]">
+            <Link href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
           </div>
         </div>
       </div>
 
-      {/* Bottom Copyright Area */}
-      <div className="bg-[#131a22] text-white py-10 px-6">
-        <div className="max-w-[1000px] mx-auto text-center space-y-4">
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[11px] text-gray-400">
-            <span className="hover:underline cursor-pointer">Conditions of Use & Sale</span>
-            <span className="hover:underline cursor-pointer">Privacy Notice</span>
-            <span className="hover:underline cursor-pointer">Interest-Based Ads</span>
-          </div>
-          <p className="text-[11px] text-gray-500 italic">
-            © 2026, MESY Global Atelier, Inc. or its affiliates. Built with Next.js 16.
-          </p>
-        </div>
+      {/* COPYRIGHT BAR */}
+      <div className="bg-neutral-950 text-neutral-500 py-8 px-6 text-center text-[9px] font-bold uppercase tracking-[1px] border-t border-neutral-900">
+        © 2026, MESY STUDIO INC. ALL RIGHTS RESERVED.
       </div>
     </footer>
   );

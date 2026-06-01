@@ -1,16 +1,115 @@
 "use client";
-import React, { useRef } from 'react';
-import { Sun, ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+
+// Custom internal sub-component to handle clean mobile viewport observation for images
+const SeasonalCard = ({ product, idx }: { product: any; idx: number }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+
+  useEffect(() => {
+    // Native mobile intersection engine for smooth grayscale inversion on scroll
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: "-15% 0px -15% 0px",
+        threshold: 0.6,
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const productTitle = product.name || "Atelier Signature Piece";
+  const productPrice = product.price || "0.00";
+  const productImage = product.images?.[0]?.src || "";
+  const archiveTag = product.sku ? `EDITION // ${product.sku}` : "EXCLUSIVE EDIT";
+
+  return (
+    <div 
+      ref={cardRef} 
+      className="group/item cursor-pointer flex flex-col bg-white text-left min-w-[260px] sm:min-w-[320px] max-w-[320px] snap-start shrink-0"
+    >
+      <Link href={`/product/${product.id}`} className="flex flex-col flex-1">
+        
+        {/* 🌌 ASPECT 3:4 SHARP IMAGE HOUSING - Blends completely into page background */}
+        <div className="relative aspect-[3/4] bg-white overflow-hidden mb-4 border border-neutral-100 block w-full">
+          {productImage ? (
+            <img 
+              src={productImage} 
+              className={`w-full h-full object-cover object-center scale-100 group-hover/item:scale-[1.02] transition-all duration-[1200ms] ease-[cubic-bezier(0.25,1,0.5,1)] mix-blend-multiply ${
+                isIntersecting 
+                  ? 'grayscale-0 md:grayscale group-hover/item:grayscale-0' 
+                  : 'grayscale md:grayscale group-hover/item:grayscale-0'
+              }`} 
+              alt={productTitle} 
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-neutral-300 uppercase tracking-widest">
+              No Finish Loaded
+            </div>
+          )}
+          
+          <div className="absolute top-3 left-3 bg-black text-white text-[7px] font-black px-2.5 py-1 uppercase tracking-[2px] rounded-[1px] z-20">
+            {archiveTag}
+          </div>
+
+          {/* Clean minimal quick view push-up bar */}
+          <div className="absolute bottom-0 left-0 w-full p-3 translate-y-full group-hover/item:translate-y-0 transition-transform duration-300 ease-out bg-white/90 backdrop-blur-xs border-t border-neutral-200 hidden sm:block z-20">
+            <span className="text-[9px] font-black tracking-[2px] text-black block text-center uppercase">
+              Quick View +
+            </span>
+          </div>
+        </div>
+
+        {/* HIGH-END TYPOGRAPHY SPECS */}
+        <div className="space-y-1.5 px-1 flex-1">
+          <p className="text-[8px] font-bold text-[#C5A358] uppercase tracking-[3px]">
+            {product.brands?.[0]?.name || "THE SUMMER EDIT"}
+          </p>
+          
+          <h3 className="text-[11px] font-bold uppercase tracking-[2px] text-neutral-400 group-hover/item:text-black transition-colors duration-300 line-clamp-1">
+            {productTitle}
+          </h3>
+          
+          <div className="flex items-baseline gap-2 pt-1 border-t border-neutral-100 mt-2">
+            <span className="text-xs font-bold text-black tracking-wide">
+              ${parseFloat(productPrice).toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+      </Link>
+
+      {/* FULL INVERSION ULTRA-LUXURY CTA ACTION */}
+      <Link href={`/product/${product.id}`} className="mt-4">
+        <button className="group/btn relative w-full py-4 bg-white text-black border border-black text-center text-[9px] font-black uppercase tracking-[3px] rounded-none overflow-hidden transition-all duration-500 shadow-sm">
+          <span className="relative z-10 transition-colors duration-500 group-hover/btn:text-white">
+            View Details
+          </span>
+          <div className="absolute inset-0 bg-black scale-y-0 group-hover/btn:scale-y-100 origin-bottom transition-transform duration-300 ease-out z-0" />
+        </button>
+      </Link>
+
+    </div>
+  );
+};
 
 const SeasonalTrends = ({ products = [] }: { products: any[] }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Smooth Horizontal Navigaion Slider Control
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
-      const scrollAmount = clientWidth * 0.85; // Elegantly slides 85% of grid width
+      const scrollAmount = clientWidth * 0.85;
       
       scrollRef.current.scrollTo({
         left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
@@ -20,120 +119,61 @@ const SeasonalTrends = ({ products = [] }: { products: any[] }) => {
   };
 
   return (
-    <section className="max-w-[1500px] mx-auto px-4 md:px-0 my-16">
-      <div className="bg-[#FAF9F6] border border-neutral-200/60 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative">
-        
-        {/* Editorial Header Layout */}
-        <div className="bg-white px-8 md:px-12 py-12 flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-neutral-100 select-none">
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-neutral-900 rounded-full flex items-center justify-center text-white shadow-md">
-              <Sun size={24} strokeWidth={1.2} className="animate-spin-slow" />
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-black tracking-[4px] text-neutral-400 uppercase italic block">Atelier Carousel Stream</span>
-              <h2 className="text-2xl md:text-3xl font-serif italic tracking-tighter text-neutral-950 font-light">
-                The Summer Edit
-              </h2>
-            </div>
-          </div>
-
-          {/* Premium Luxury Action Arrow Controllers */}
-          {products && products.length > 0 && (
-            <div className="flex items-center gap-3 self-end sm:self-center">
-              <button 
-                onClick={() => handleScroll('left')}
-                type="button" 
-                className="w-12 h-12 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-800 shadow-sm hover:bg-neutral-950 hover:text-white hover:border-neutral-950 transition-all active:scale-95"
-              >
-                <ChevronLeft size={18} strokeWidth={2.5} />
-              </button>
-              <button 
-                onClick={() => handleScroll('right')}
-                type="button" 
-                className="w-12 h-12 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-neutral-800 shadow-sm hover:bg-neutral-950 hover:text-white hover:border-neutral-950 transition-all active:scale-95"
-              >
-                <ChevronRight size={18} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
+    // 🎯 FIXED: Removed max-w caps and strict capsule layouts to stretch 100% full-screen edge-to-edge
+    <section className="w-full bg-white py-20 px-4 md:px-8 lg:px-12 select-none font-sans antialiased group relative border-b border-neutral-100">
+      
+      {/* HEADER ROW */}
+      <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 text-left">
+        <div className="space-y-1">
+          <h2 className="text-xl sm:text-2xl font-black tracking-[4px] text-black uppercase">
+            THE SUMMER EDIT
+          </h2>
+          <p className="text-[9px] font-bold uppercase tracking-[3px] text-neutral-400">
+            ATELIER SEASONAL CAROUSEL STREAM
+          </p>
         </div>
 
-        {/* Dynamic Matrix View Validation */}
-        {!products || products.length === 0 ? (
-          <div className="text-center py-24 text-[10px] font-black uppercase tracking-[4px] text-neutral-400 italic">
-            — Summer Collection Channel Currently Empty —
-          </div>
-        ) : (
-          /* Horizontal Scroll Container (With custom scroll-bar handling) */
-          <div 
-            ref={scrollRef}
-            className="flex overflow-x-auto gap-6 p-6 bg-white no-scrollbar snap-x snap-mandatory scroll-smooth"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            {products.map((product: any, idx: number) => {
-              const productTitle = product.name || "Atelier Signature Piece";
-              const productPrice = product.price || "0.00";
-              const productImage = product.images?.[0]?.src || "";
-              const archiveTag = product.sku ? `Edition • ${product.sku}` : "Summer Collection";
-
-              return (
-                <div 
-                  key={product.id || idx} 
-                  className="group cursor-pointer flex flex-col bg-[#FDFDFD] border border-neutral-100 rounded-2xl p-4 hover:bg-white hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:border-neutral-200/70 transition-all duration-500 min-w-[280px] sm:min-w-[320px] lg:min-w-[340px] max-w-[350px] snap-start shrink-0"
-                >
-                  <Link href={`/product/${product.id}`} className="flex flex-col flex-1">
-                    
-                    {/* Image Canvas Box */}
-                    <div className="relative aspect-[3/4] bg-[#F9F9F9] rounded-xl mb-5 flex items-center justify-center overflow-hidden p-6 transition-all duration-700 group-hover:bg-[#F6F6F3]">
-                      {productImage ? (
-                        <img 
-                          src={productImage} 
-                          className="max-h-full max-w-full object-contain transform group-hover:scale-105 transition-transform duration-700 select-none" 
-                          alt={productTitle} 
-                        />
-                      ) : (
-                        <span className="text-[9px] font-black tracking-widest text-neutral-300 uppercase italic">
-                          No Finish Loaded
-                        </span>
-                      )}
-                      
-                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-neutral-800 text-[8px] font-black px-2.5 py-1 rounded border border-neutral-200/40 uppercase tracking-[2px] shadow-sm">
-                        {archiveTag}
-                      </div>
-                    </div>
-
-                    {/* Elite Typographic Content Framing */}
-                    <div className="space-y-3 flex-1 px-1">
-                      <div className="flex justify-between items-start gap-2">
-                        <h3 className="text-xs font-black uppercase text-neutral-900 tracking-wider group-hover:text-[#C5A358] transition-colors leading-tight max-w-[85%] truncate">
-                          {productTitle}
-                        </h3>
-                        <ArrowUpRight size={14} className="text-neutral-300 group-hover:text-[#C5A358] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 duration-300" />
-                      </div>
-                      
-                      <div className="flex items-baseline justify-between border-t border-neutral-100/70 pt-2.5">
-                        <span className="text-[10px] text-neutral-400 font-serif italic uppercase tracking-wider">Acquisition</span>
-                        <span className="text-base font-serif font-light italic text-neutral-950 tracking-tight">
-                          ₹{parseFloat(productPrice).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    </div>
-
-                  </Link>
-
-                  {/* High-End Minimalist Button */}
-                  <Link href={`/product/${product.id}`} className="mt-5">
-                    <button className="w-full py-3.5 bg-neutral-950 text-white rounded-xl text-[9px] font-black uppercase tracking-[3px] hover:bg-[#C5A358] transition-all duration-300 shadow-sm active:scale-[0.98]">
-                      View Details
-                    </button>
-                  </Link>
-
-                </div>
-              );
-            })}
+        {/* CONTROLLERS BUTTONS ROW */}
+        {products && products.length > 0 && (
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <button 
+              onClick={() => handleScroll('left')}
+              type="button" 
+              className="w-11 h-11 bg-white border border-neutral-200 flex items-center justify-center rounded-none transition-all duration-300 hover:bg-black hover:text-white"
+            >
+              <ChevronLeft size={16} strokeWidth={1.5} />
+            </button>
+            <button 
+              onClick={() => handleScroll('right')}
+              type="button" 
+              className="w-11 h-11 bg-white border border-neutral-200 flex items-center justify-center rounded-none transition-all duration-300 hover:bg-black hover:text-white"
+            >
+              <ChevronRight size={16} strokeWidth={1.5} />
+            </button>
           </div>
         )}
       </div>
+
+      {/* MATRIX VIEW VALIDATION */}
+      {!products || products.length === 0 ? (
+        <div className="w-full py-24 text-center bg-white border border-neutral-100 flex flex-col items-center justify-center">
+          <span className="text-[9px] font-black uppercase tracking-[4px] text-neutral-400 italic">
+            — SUMMER COLLECTION CHANNEL CURRENTY EMPTY —
+          </span>
+        </div>
+      ) : (
+        /* Horizontal Scroll Container (With custom no-scrollbar setup) */
+        <div 
+          ref={scrollRef}
+          className="flex overflow-x-auto gap-4 sm:gap-6 bg-white no-scrollbar snap-x snap-mandatory scroll-smooth pb-4 w-full"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {products.map((product: any, idx: number) => (
+            <SeasonalCard key={product.id || idx} product={product} idx={idx} />
+          ))}
+        </div>
+      )}
+
     </section>
   );
 };

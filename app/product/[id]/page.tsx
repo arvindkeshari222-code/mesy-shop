@@ -1,29 +1,19 @@
 import { api } from '@/app/lib/woocommerce';
 import ProductDetailsClient from './ProductDetailsClient';
 
-// Next.js params ko properly async handle karne ke liye type definition
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-// 👈 Is function ko 'export default' hona zaroori hai Next.js router ke liye
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   try {
-    // 1. Base Product Fetch
+    // 1. Base Product Request
     const baseProductRes = await api.get(`products/${id}`);
     const product = baseProductRes.data;
 
     if (!product) {
-      return (
-        <div className="min-h-screen bg-white flex items-center justify-center text-neutral-500 font-sans text-xs font-black uppercase tracking-[3px]">
-          — Item Not Found In Boutique Archive —
-        </div>
-      );
+      return <div className="text-center py-20 text-black">Product not found in archive.</div>;
     }
 
-    // 2. Variations, Related, and Initial Reviews parallel pipeline fetch
+    // 2. Parallel Endpoint Pipeline - Initial load fetches 100 reviews in one shot securely on server
     const [variationsRes, reviewsRes, relatedRes] = await Promise.all([
       api.get(`products/${id}/variations`, { per_page: 50 }).catch(() => ({ data: [] })),
       api.get(`products/reviews`, { product: parseInt(id, 10), status: 'approved', per_page: 100 }).catch(() => ({ data: [] })),
@@ -32,23 +22,18 @@ export default async function ProductPage({ params }: PageProps) {
         : Promise.resolve({ data: [] })
     ]);
 
-    // 3. Client Side Wrapper safely injected with server data
     return (
       <ProductDetailsClient
         initialProduct={product}
         initialVariations={variationsRes.data}
-        initialReviews={reviewsRes.data}
+        initialReviews={reviewsRes.data} // Whole list safely injected into client array
         initialRelated={relatedRes.data}
         productId={id}
       />
     );
 
   } catch (error) {
-    console.error("Boutique server route channel alignment failure:", error);
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-neutral-400 font-sans text-xs font-black uppercase tracking-[3px]">
-        — Error Syncing Boutique Data Stream —
-      </div>
-    );
+    console.error("Fetch alignment failure:", error);
+    return <div className="text-center py-20 text-black">Error loading boutique archive channel.</div>;
   }
 }

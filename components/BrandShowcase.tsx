@@ -1,60 +1,68 @@
 "use client";
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 const BrandShowcase = () => {
-  const brands = [
+  // Isko tumhaari top master categories ke sath link kar diya hai
+  const categories = [
     {
       name: "MESY Tech",
-      desc: "Future of Workspace",
-      img: "💻",
-      color: "bg-[#161618]",
-      textColor: "text-white"
+      desc: "Tech & Innovation Elite",
+      link: "/category/tech-innovation",
+      bgClass: "bg-gradient-to-br from-[#111] via-[#161618] to-[#222]",
+      textColor: "text-white",
+      badge: "Mobile Suite & Audio"
     },
     {
       name: "Atelier Home",
-      desc: "Handcrafted Luxury",
-      img: "🏺",
-      color: "bg-[#F5F5F7]",
-      textColor: "text-black"
+      desc: "Handcrafted Luxury Living",
+      link: "/category/home-sanctuary",
+      bgClass: "bg-gradient-to-br from-[#F5F5F7] to-[#E8E8ED]",
+      textColor: "text-black",
+      badge: "Decor & Aura Lighting"
     }
   ];
 
   return (
-    <section className="max-w-[1500px] mx-auto px-1 md:px-0 my-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {brands.map((brand, idx) => (
-          <div 
-            key={idx} 
-            className={`${brand.color} h-[500px] rounded-sm relative overflow-hidden group cursor-pointer flex flex-col items-center justify-center text-center p-12`}
+    <section className="max-w-[1550px] mx-auto px-1 md:px-0 my-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {categories.map((cat, idx) => (
+          <Link
+            href={cat.link}
+            key={idx}
+            className={`${cat.bgClass} h-[450px] md:h-[500px] rounded-[32px] relative overflow-hidden group cursor-pointer flex flex-col items-center justify-center text-center p-12 shadow-sm border border-gray-100/10`}
           >
-            {/* Background Text Effect */}
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 opacity-10 select-none">
-              <span className={`text-9xl font-black tracking-tighter ${brand.textColor}`}>
-                {brand.name.split(' ')[0]}
+            {/* Background Big Typography Text Effect */}
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 opacity-[0.03] md:opacity-[0.05] select-none pointer-events-none w-full">
+              <span className={`text-[8rem] md:text-[12rem] font-black uppercase tracking-tighter block text-center ${cat.textColor}`}>
+                {cat.name.split(' ')[0]}
               </span>
             </div>
 
-            {/* Content */}
-            <div className="relative z-10 space-y-4">
-              <h3 className={`text-4xl md:text-6xl font-serif italic ${brand.textColor}`}>
-                {brand.name}
+            {/* Content Container */}
+            <div className="relative z-10 space-y-6 flex flex-col items-center">
+              <span className={`inline-block text-[9px] font-black uppercase tracking-[4px] px-4 py-1.5 border rounded-full backdrop-blur-md ${cat.textColor === 'text-white' ? 'border-white/20 text-white/80 bg-white/5' : 'border-black/10 text-black/70 bg-black/5'}`}>
+                {cat.badge}
+              </span>
+              
+              <h3 className={`text-4xl md:text-6xl font-serif italic ${cat.textColor} tracking-tight drop-shadow-sm`}>
+                {cat.name}
               </h3>
-              <p className={`text-sm tracking-[4px] uppercase font-bold opacity-70 ${brand.textColor}`}>
-                {brand.desc}
+              
+              <p className={`text-xs md:text-sm tracking-[5px] uppercase font-bold opacity-60 max-w-sm ${cat.textColor}`}>
+                {cat.desc}
               </p>
               
-              <div className={`mt-8 flex items-center justify-center gap-2 text-sm font-bold border-b-2 pb-1 transition-all group-hover:gap-4 ${brand.textColor === 'text-white' ? 'border-white' : 'border-black'}`}>
+              <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[3px] border-b pb-2 transition-all duration-300 group-hover:gap-4 ${cat.textColor === 'text-white' ? 'border-white/40 text-white hover:border-white' : 'border-black/20 text-black hover:border-black'}`}>
                 <span>Discover Collection</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={14} strokeWidth={2.5} />
               </div>
             </div>
 
-            {/* Large Floating Icon/Image Placeholder */}
-            <div className="absolute bottom-[-20px] right-[-20px] text-[15rem] opacity-20 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-700">
-              {brand.img}
-            </div>
-          </div>
+            {/* Decorative Corner Luxury Light Effect */}
+            <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-white/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#C5A358]/10 transition-all duration-700" />
+          </Link>
         ))}
       </div>
     </section>

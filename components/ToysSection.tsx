@@ -2,8 +2,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 
-// Custom internal sub-component mapped 1:1 to your gold standard BestSellers framework
-const TechProductCard = ({ item }: { item: any }) => {
+// Custom internal sub-component mapped 1:1 to your BestSellers validation pipeline
+const ToyProductCard = ({ item }: { item: any }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
 
@@ -37,9 +37,9 @@ const TechProductCard = ({ item }: { item: any }) => {
       .replace(/&#039;/g, "'");
   };
 
-  const productTitle = item.name || "Atelier New Piece";
+  const productTitle = item.name || "Atelier Limited Object";
   const productPrice = item.price || "0.00";
-  const productImage = item.images?.[0]?.src || "";
+  const productImage = item.images?.[0]?.src || item.image || "";
 
   return (
     <div 
@@ -93,7 +93,7 @@ const TechProductCard = ({ item }: { item: any }) => {
         </div>
       </div>
 
-      {/* MATCHING INTERACTIVE ACTION BUTTON */}
+      {/* MATCHING ACTION LINK BUTTON */}
       <Link 
         href={`/product/${item.id}`}
         className="group/btn relative mt-4 w-full py-4 bg-white text-black border border-black text-center text-[9px] font-black uppercase tracking-[3px] rounded-none overflow-hidden transition-all duration-500 shadow-sm"
@@ -107,11 +107,11 @@ const TechProductCard = ({ item }: { item: any }) => {
   );
 };
 
-const MobileSection = ({ products = [] }: { products: any[] }) => {
+const ToysSection = ({ products = [] }: { products: any[] }) => {
   const displayItems = products && products.length > 0 ? products.slice(0, 4) : [];
 
   return (
-    // 🎯 STRETCHED FRAME: Edge-to-edge width matrix limits to ensure flawless unified structure flow
+    // 🎯 STRETCHED FRAME: Edge-to-edge layout width configuration with clean neutral lines
     <section className="w-full bg-white py-12 select-none font-sans antialiased relative z-30 border-b border-neutral-100">
       <div className="w-full">
         
@@ -119,33 +119,33 @@ const MobileSection = ({ products = [] }: { products: any[] }) => {
         <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10 text-left">
           <div className="space-y-1">
             <h2 className="text-xl sm:text-2xl font-black tracking-[4px] text-black uppercase">
-              NEW ARRIVALS ARCHIVE
+              TOYS & COLLECTIBLES
             </h2>
             <p className="text-[9px] font-bold uppercase tracking-[3px] text-neutral-400">
-              LATEST BOUTIQUE ADDITIONS & TECH INNOVATIONS
+              PREMIUM DESIGNER FIGURES & CURATED ARTIFACTS
             </p>
           </div>
           
           <Link 
-            href="/category/tech-innovation" 
+            href="/category/toys-collectibles" 
             className="text-[10px] font-black uppercase tracking-[2px] text-black border-b border-black pb-0.5 self-start sm:self-auto hover:opacity-60 transition-opacity"
           >
             View All Collections
           </Link>
         </div>
 
-        {/* LOADING EMPTY ZONE ARCHIVE VALIDATION */}
+        {/* VAULT EMPTY STATE GATEWAY */}
         {displayItems.length === 0 ? (
           <div className="w-full py-24 text-center bg-white border border-neutral-100 flex flex-col items-center justify-center">
             <span className="text-[9px] font-black uppercase tracking-[4px] text-neutral-400 italic">
-              — SYNCING TECH ECOSYSTEM —
+              — LOADING TOYS & COLLECTIBLES VAULT —
             </span>
           </div>
         ) : (
           /* PERFECT FLAT RESPONSE FOUR COLUMN MATRIX GRID */
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full">
             {displayItems.map((item, idx) => (
-              <TechProductCard key={item.id || idx} item={item} />
+              <ToyProductCard key={item.id || idx} item={item} />
             ))}
           </div>
         )}
@@ -155,4 +155,4 @@ const MobileSection = ({ products = [] }: { products: any[] }) => {
   );
 };
 
-export default MobileSection;
+export default ToysSection;

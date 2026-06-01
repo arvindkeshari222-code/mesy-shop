@@ -1,87 +1,124 @@
 "use client";
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
-import Link from 'next/link'; // 🚨 NEXT.JS LINK IMPORT KIYA
+import React, { useRef, useEffect, useState } from 'react';
+import Link from 'next/link';
 
-const miniCollections = [
-  { name: "Summer", slug: "summer", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&q=80", tag: "Trending", price: "From ₹1,499" },
-  { name: "Atelier", slug: "atelier", img: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&q=80", tag: "Elite", price: "Premium Tech" },
-  { name: "Heritage", slug: "heritage", img: "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=600&q=80", tag: "Limited", price: "Handcrafted" },
-  { name: "Glow", slug: "glow", img: "https://images.unsplash.com/photo-1596462502278-27bfdc4033c8?w=600&q=80", tag: "Organic", price: "Skin & Glow" },
-  { name: "Sanctuary", slug: "sanctuary", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80", tag: "Modern", price: "Home Decor" },
-  { name: "The Vault", slug: "the-vault", img: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&q=80", tag: "Rare", price: "Exclusive" },
-];
+interface MiniShowcaseProps {
+  categories?: any[];
+}
 
-const MiniShowcase = () => {
+// Custom internal sub-component to handle clean mobile viewport observation for images
+const CategoryCard = ({ item, index }: { item: any; index: number }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+
+  useEffect(() => {
+    // Native mobile intersection engine for smooth grayscale inversion on scroll
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        root: null,
+        rootMargin: "-15% 0px -15% 0px",
+        threshold: 0.6,
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // 🎯 100% SERVER-SAFE DECODE ENGINE: Universally parsed on both Server and Client without breaking DOM
+  const safeDecodeHtml = (str: string) => {
+    if (!str) return "";
+    return str
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'");
+  };
+
   return (
-    <section className="py-20 bg-white px-4 relative z-30">
-      <div className="max-w-[1550px] mx-auto">
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div
+      ref={cardRef}
+      className="relative block group cursor-pointer w-full"
+    >
+      <Link href={`/category/${item.slug}`} className="block w-full h-full">
+        {/* 🌌 ASPECT 3:4 SHARP GRID HOUSING - Blends completely with page background */}
+        <div className="relative aspect-[3/4] bg-white overflow-hidden border border-neutral-100 w-full">
           
-          {miniCollections.map((item, i) => (
-            /* 🚨 SYSTEM CHANGE: Pure Wrapper ko standard Link block banaya */
-            <Link 
-              key={i}
-              href={`/category/${item.slug}`}
-              className="relative block group cursor-pointer"
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05, duration: 0.5 }}
-                whileHover={{ y: -8 }}
-                className="relative aspect-[3/4.5] rounded-[24px] overflow-hidden bg-[#F9F9FB] w-full h-full"
-              >
-                {/* Image layout layer */}
-                <img 
-                  src={item.img} 
-                  className="w-full h-full object-cover transition-transform duration-[1.5s] ease-out group-hover:scale-110 pointer-events-none" 
-                  alt={item.name} 
-                />
-                
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent opacity-70 group-hover:opacity-90 transition-all duration-500 pointer-events-none" />
+          {/* 👑 IMAGE FILTER ENGINE: mix-blend-multiply wipes #eaeded + triggers Mobile-Scroll/Desktop-Hover color switch */}
+          <img 
+            src={item.image?.src || "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=600&q=80"} 
+            className={`w-full h-full object-cover object-center scale-100 group-hover:scale-[1.02] transition-all duration-[1200ms] ease-[cubic-bezier(0.25,1,0.5,1)] mix-blend-multiply ${
+              isIntersecting 
+                ? 'grayscale-0 md:grayscale group-hover:grayscale-0' 
+                : 'grayscale md:grayscale group-hover:grayscale-0'
+            }`} 
+            alt={item.name} 
+          />
+          
+          {/* Subtle elegant top line overlay label instead of cheap floating circles */}
+          <div className="absolute top-3 left-3 z-10">
+            <span className="text-[7px] font-black uppercase tracking-[2px] text-neutral-400 bg-white/80 backdrop-blur-xs px-2 py-1 border border-neutral-100">
+              {item.count || 0} PIECES
+            </span>
+          </div>
 
-                {/* Top Glass Badge */}
-                <div className="absolute top-4 left-4 z-10 pointer-events-none">
-                  <span className="bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[7px] font-black uppercase tracking-[2.5px] px-2.5 py-1.5 rounded-full shadow-2xl">
-                    {item.tag}
-                  </span>
-                </div>
-
-                {/* Floating Action Button */}
-                <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-2 group-hover:translate-x-0 pointer-events-none">
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-black shadow-lg">
-                    <ArrowUpRight size={14} />
-                  </div>
-                </div>
-
-                {/* Bottom Content Area */}
-                <div className="absolute bottom-6 left-0 right-0 px-5 space-y-1 z-10 pointer-events-none">
-                  <h3 className="text-lg font-serif italic text-white tracking-tighter transition-all duration-500 group-hover:text-[#C5A358]">
-                    {item.name}
-                  </h3>
-                  <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-2 group-hover:translate-y-0">
-                    <p className="text-[8px] font-black uppercase tracking-widest text-gray-400">
-                      {item.price}
-                    </p>
-                    <div className="h-[1px] flex-1 bg-white/20 ml-3" />
-                  </div>
-                </div>
-
-                {/* Interaction Border */}
-                <div className="absolute inset-0 border border-white/0 group-hover:border-white/10 transition-all duration-500 rounded-[24px] pointer-events-none" />
-                
-                {/* 🚨 THE ROCK-SOLID OVERRIDE BUTTON Layer: Pure animation grid ke upar absolute top screen par events ko bypass karegi */}
-                <div className="absolute inset-0 z-50 w-full h-full bg-transparent cursor-pointer pointer-events-auto" />
-              </motion.div>
-            </Link>
-          ))}
-
+          {/* Clean minimal bottom hover bar indicator */}
+          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20" />
         </div>
+
+        {/* HIGH-END MINIMALIST TYPOGRAPHY SPECS */}
+        <div className="pt-3 pb-2 px-1 space-y-1 text-left">
+          {/* 🎯 FIXED: Handled text capitalization securely using layout layer utility styling (uppercase) */}
+          <h3 className="text-[11px] font-bold uppercase tracking-[2.5px] text-neutral-400 group-hover:text-black transition-colors duration-300 line-clamp-1">
+            {safeDecodeHtml(item.name)}
+          </h3>
+          <p className="text-[8px] font-bold uppercase tracking-[3px] text-neutral-300">
+            Series // 0{index + 1}
+          </p>
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+const MiniShowcase: React.FC<MiniShowcaseProps> = ({ categories = [] }) => {
+  
+  // Filter out unwanted nodes and extract active components
+  const activeCategories = categories
+    .filter(cat => cat.slug !== 'uncategorized')
+    .slice(0, 6);
+
+  if (activeCategories.length === 0) return null;
+
+  return (
+    // 🎯 FIXED: Stripped max-w caps and paddings to stretch 100% full-screen edge-to-edge
+    <section className="w-full bg-white py-16 px-4 md:px-8 lg:px-12 select-none font-sans antialiased relative z-30 border-b border-neutral-100">
+      <div className="w-full">
+        
+        {/* SECTION HEADER BLOCK */}
+        <div className="w-full text-left mb-10">
+          <h2 className="text-xl sm:text-2xl font-black tracking-[4px] text-black uppercase">
+            EXPLORE CATEGORIES
+          </h2>
+          <p className="text-[9px] font-bold uppercase tracking-[3px] text-neutral-400 mt-1">
+            CURATED STRUCTURES BY ACTIVITY
+          </p>
+        </div>
+
+        {/* PERFECT RESPONSIVE FULL LENGTH GRID MATRIX */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 w-full">
+          {activeCategories.map((item, i) => (
+            <CategoryCard key={item.id} item={item} index={i} />
+          ))}
+        </div>
+
       </div>
     </section>
   );

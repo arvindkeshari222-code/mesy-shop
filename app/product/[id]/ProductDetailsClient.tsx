@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck, RefreshCw, Leaf, Share2 } from 'lucide-react';
+import Link from 'next/link';
+import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck, RefreshCw, Leaf, Share2, Check } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext'; 
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { AnimatePresence, motion } from 'framer-motion';
@@ -11,9 +12,9 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [mounted, setMounted] = useState(false);
   const [activeImage, setActiveImage] = useState(initialProduct?.images?.[0]?.src || "");
   const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState(""); 
   const [displayPrice, setDisplayPrice] = useState(initialProduct?.price || "0.00");
   const [qty, setQty] = useState(1);
-  const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [zoomStyle, setZoomStyle] = useState({ display: 'none', backgroundPosition: '0% 0%' });
   const [activeTab, setActiveTab] = useState('description');
 
@@ -23,7 +24,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [reviewerName, setReviewerName] = useState("");
   const [reviewerEmail, setReviewerEmail] = useState("");
   
-  // Client Side Matrix Pagination Engine
   const [reviewsList, setReviewsList] = useState(initialReviews || []);
   const [reviewPage, setReviewPage] = useState(1);
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -38,16 +38,29 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const reviewsTopRef = useRef<HTMLDivElement>(null); 
 
   const averageRating = parseFloat(initialProduct?.average_rating || "4.90");
-  const totalRatingCount = reviewsList.length; // Uses accurate runtime lengths
+  const totalRatingCount = reviewsList.length; 
   
-  // Per Page split constraint set to 20
   const reviewsPerPage = 20;
   const totalPages = Math.max(1, Math.ceil(totalRatingCount / reviewsPerPage));
 
-  // Client Slice Calculations: Grabs exact matrix items
   const indexOfLastReview = reviewPage * reviewsPerPage;
   const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
   const currentPagedReviews = reviewsList.slice(indexOfFirstReview, indexOfLastReview);
+
+  const isOutOfStock = initialProduct?.stock_status === 'outofstock';
+
+  // Core Global Price Variables
+  const currentPriceValue = displayPrice ? parseFloat(displayPrice) : 0;
+  let regPriceValue = initialProduct?.regular_price ? parseFloat(initialProduct.regular_price) : 0;
+
+  if (regPriceValue === 0 || isNaN(regPriceValue) || regPriceValue <= currentPriceValue) {
+    regPriceValue = currentPriceValue * 2.052; 
+  }
+
+  // Real-time dynamic discount calculation matrix loop
+  const calculatedDiscountPercent = regPriceValue > currentPriceValue 
+    ? Math.round(((regPriceValue - currentPriceValue) / regPriceValue) * 100)
+    : 0;
 
   useEffect(() => {
     setMounted(true);
@@ -77,11 +90,14 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const youtubeId = getYouTubeId(videoUrl) || "dQw4w9WgXcQ";
 
   const shortDescContent = initialProduct?.short_description || initialProduct?.excerpt || "Premium tailored architecture designed with unmatched precision.";
+  
   const colorAttr = initialProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
+  const sizeAttr = initialProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('size'));
 
   useEffect(() => { 
     if (colorAttr && colorAttr.options) setSelectedColor(colorAttr.options[0]);
-  }, [initialProduct, colorAttr]);
+    if (sizeAttr && sizeAttr.options) setSelectedSize(sizeAttr.options[0]);
+  }, [initialProduct, colorAttr, sizeAttr]);
 
   useEffect(() => {
     if (activeTab !== 'description' && descriptionContainerRef.current) {
@@ -92,25 +108,36 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     }
   }, [activeTab]);
 
+  // WooCommerce Variation Sync Loop
   useEffect(() => {
-    if (selectedColor && initialVariations?.length > 0) {
-      const variant = initialVariations.find((v: any) => v.attributes.some((attr: any) => attr.option === selectedColor));
-      if (variant) {
-        if (variant.price) setDisplayPrice(variant.price);
-        if (variant.image?.src) {
-          setActiveImage(variant.image.src);
-          const idx = images.findIndex((img: any) => img.src === variant.image.src);
+    if (initialVariations?.length > 0) {
+      const variant = initialVariations.find((v: any) => {
+        const matchColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
+        const matchSize = sizeAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase()) : true;
+        return matchColor && matchSize;
+      });
+
+      const fallbackVariant = variant || initialVariations.find((v: any) => {
+        return (colorAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase())) || 
+               (sizeAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase()));
+      });
+
+      const targetVariant = variant || fallbackVariant;
+
+      if (targetVariant) {
+        if (targetVariant.price) setDisplayPrice(targetVariant.price);
+        if (targetVariant.image?.src && selectedColor) {
+          setActiveImage(targetVariant.image.src);
+          const idx = images.findIndex((img: any) => img.src === targetVariant.image.src);
           if (idx !== -1) setCurrentImgIndex(idx);
         }
       }
     }
-  }, [selectedColor, initialVariations, images]);
+  }, [selectedColor, selectedSize, initialVariations, images, colorAttr, sizeAttr]);
 
-  // INSTANT CLIENT PAGE JUMPER
   const handlePageChange = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return;
     setReviewPage(targetPage);
-    // Instant premium smooth scroll shift
     reviewsTopRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -133,7 +160,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   };
 
   const handleReserveInBag = () => {
-    if (!initialProduct) return;
+    if (!initialProduct || isOutOfStock) return;
     setIsAdding(true);
     setTimeout(() => {
       addToCart({
@@ -143,7 +170,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
         quantity: Number(qty),
         selectedColor: selectedColor || undefined,
         image: activeImage || (initialProduct.images?.[0]?.src || ""),
-        options: selectedColor ? { Color: selectedColor } : undefined
+        options: {
+          ...(selectedColor && { Color: selectedColor }),
+          ...(selectedSize && { Size: selectedSize })
+        }
       });
       setIsAdding(false);
       setIsAddedSuccess(true);
@@ -181,7 +211,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
       setReviewsList((prev: any) => [newLiveReview, ...prev]);
       setReviewText(""); setReviewerName(""); setReviewerEmail(""); setRating(5);
-      setReviewPage(1); // Takes user back to first page to show live input
+      setReviewPage(1); 
     } catch (error) {
       console.error("Submission failed:", error);
     } finally {
@@ -191,9 +221,14 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.pageX - left - window.scrollX) / width) * 100;
-    const y = ((e.pageY - top - window.scrollY) / height) * 100;
-    setZoomStyle({ display: 'block', backgroundPosition: `${x}% ${y}%`, backgroundImage: `url(${activeImage})`, backgroundSize: '250%' });
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomStyle({ 
+      display: 'block', 
+      backgroundPosition: `${x}% ${y}%`, 
+      backgroundImage: `url(${activeImage})`, 
+      backgroundSize: '220%' 
+    });
   };
 
   if (!mounted || !initialProduct) return null;
@@ -217,10 +252,21 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 ))}
               </div>
 
-              <div onClick={() => { if (window.innerWidth < 1024) setIsZoomOpen(true); }} className="flex-1 aspect-square bg-[#fafafa] rounded-[24px] lg:rounded-[40px] flex items-center justify-center p-6 lg:p-12 border border-gray-50 relative cursor-pointer lg:cursor-crosshair overflow-hidden group shadow-sm" onMouseMove={handleMouseMove} onMouseLeave={() => setZoomStyle({ display: 'none' })}>
-                {activeImage ? <img src={activeImage} className="max-h-full w-auto object-contain transition-all duration-700 lg:group-hover:opacity-0 select-none" alt="Master" /> : <div className="text-gray-300 text-xs font-bold uppercase tracking-widest">No Image Loaded</div>}
-                <div className="absolute inset-0 z-10 pointer-events-none hidden lg:block bg-no-repeat" style={zoomStyle as any} />
+              <div 
+                onClick={() => { if (window.innerWidth < 1024) setIsZoomOpen(true); }} 
+                onMouseMove={handleMouseMove}
+                onMouseLeave={() => setZoomStyle({ display: 'none', backgroundPosition: '0% 0%' })}
+                className="flex-1 aspect-square bg-[#fafafa] rounded-[24px] lg:rounded-[40px] flex items-center justify-center p-6 lg:p-12 border border-gray-50 relative cursor-pointer lg:cursor-crosshair overflow-hidden group shadow-sm w-full h-auto max-h-[450px] md:max-h-none"
+              >
+                {activeImage ? (
+                  <img src={activeImage} className="max-h-full max-w-full w-auto h-auto object-contain select-none transition-none group-hover:opacity-0" alt="Master" />
+                ) : (
+                  <div className="text-gray-300 text-xs font-bold uppercase tracking-widest">No Image Loaded</div>
+                )}
+                
+                <div className="absolute inset-0 z-10 pointer-events-none hidden lg:block bg-no-repeat rounded-[40px]" style={zoomStyle as any} />
                 <div className="lg:hidden absolute top-4 right-4 bg-white/80 p-2 rounded-full border border-gray-100 shadow-sm text-gray-400 z-20"><ZoomIn size={14} /></div>
+                
                 {images.length > 1 && (
                   <>
                     <button onClick={prevImage} type="button" className="lg:hidden absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/95 border border-gray-100 shadow rounded-full flex items-center justify-center text-black z-30"><ChevronLeft size={16} strokeWidth={2.5} /></button>
@@ -245,21 +291,129 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 )}
               </header>
 
-              <div className="flex items-center justify-between border-y border-neutral-100 py-6">
-                 <span className="text-4xl font-light tracking-tighter italic text-black underline underline-offset-8 decoration-gray-100">${displayPrice}</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-y border-neutral-100 py-6 gap-4">
+                 <div className="flex flex-col space-y-1">
+                   <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 italic">
+                     ✨ Exclusive Atelier Limited Run Offer
+                   </p>
+                   <div className="flex items-baseline gap-3.5 flex-wrap">
+                     <span className="text-4xl font-light tracking-tighter italic text-black underline underline-offset-8 decoration-gray-100">
+                       ${currentPriceValue.toFixed(2)}
+                     </span>
+                     {/* 🎯 FIXED: Text color kept standard gray-400, but strike-through line color set to sharp red via decoration-[#E14B4B] */}
+                     <span className="text-xl font-light text-gray-400 line-through tracking-tighter decoration-[#E14B4B]">
+                       ${regPriceValue.toFixed(2)}
+                     </span>
+                   </div>
+                 </div>
+                 
                  <div className="flex items-center gap-4">
                     <button onClick={() => { if (navigator.share) { navigator.share({ title: initialProduct.name, text: `Check out this premium asset on MESY Atelier`, url: window.location.href }).catch(console.error); } else { navigator.clipboard.writeText(window.location.href); alert("Product link elegantly copied!"); } }} type="button" className="p-3 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/60 rounded-full text-neutral-700 transition-all active:scale-95 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm"><Share2 size={13} /> Share</button>
-                    <span className="bg-[#00a65a]/10 text-[#00a65a] text-[10px] font-black uppercase tracking-[3px] px-4 py-2 rounded-full border border-[#00a65a]/20">In Stock Now</span>
+                    
+                    {isOutOfStock ? (
+                      <span className="bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-[3px] px-4 py-2 rounded-full border border-red-100">Out Of Stock</span>
+                    ) : (
+                      <span className="bg-[#00a65a]/10 text-[#00a65a] text-[10px] font-black uppercase tracking-[3px] px-4 py-2 rounded-full border border-[#00a65a]/20">In Stock Now</span>
+                    )}
                  </div>
               </div>
 
+              <div className="bg-[#fafafa] p-6 rounded-[32px] border border-gray-100 max-w-full">
+                 <div className="text-[13px] leading-relaxed text-gray-500 font-medium max-w-full break-words font-sans">
+                   <div dangerouslySetInnerHTML={{ __html: shortDescContent }} className="space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1.5" />
+                 </div>
+              </div>
+
+              {/* 🎨 COLOR VARIATION CHIPS */}
               {colorAttr && (
-                <div className="space-y-4">
-                  <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">Select Finish: <span className="text-black font-bold uppercase underline">{selectedColor}</span></p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {colorAttr.options.map((opt: string) => (
-                      <button key={opt} onClick={() => setSelectedColor(opt)} className={`px-8 py-3 text-[10px] font-black uppercase tracking-[3px] rounded-full border-2 transition-all ${selectedColor === opt ? 'bg-black text-white border-black shadow-lg' : 'bg-transparent text-gray-400 border-gray-100'}`}>{opt}</button>
-                    ))}
+                <div className="space-y-4 border-b border-neutral-100 pb-6">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">
+                      Color: <span className="text-black font-bold uppercase underline decoration-[#C5A358] decoration-2">{selectedColor}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3.5 pt-1">
+                    {colorAttr.options.map((opt: string) => {
+                      const variantMatch = initialVariations?.find((v: any) => 
+                        v.attributes.some((attr: any) => attr.option?.toLowerCase() === opt?.toLowerCase())
+                      );
+                      const thumbImg = variantMatch?.image?.src || initialProduct?.images?.[0]?.src;
+                      const isSelected = selectedColor?.toLowerCase() === opt?.toLowerCase();
+
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setSelectedColor(opt)}
+                          className={`group/thumb relative aspect-square w-[72px] rounded-2xl overflow-hidden p-1 border-2 transition-all duration-300 ${
+                            isSelected 
+                              ? 'border-neutral-900 scale-105 shadow-md shadow-neutral-100' 
+                              : 'border-neutral-200/60 opacity-60 hover:opacity-100 hover:border-neutral-400'
+                          }`}
+                        >
+                          {thumbImg ? (
+                            <img src={thumbImg} className="w-full h-full object-cover rounded-xl" alt={opt} />
+                          ) : (
+                            <span className="text-[8px] font-black text-neutral-400">{opt}</span>
+                          )}
+                          
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 bg-neutral-950 text-white p-0.5 rounded-full border border-white shadow-sm">
+                              <Check size={8} strokeWidth={3} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 📏 ULTRA-PREMIUM MATRIX WITH DYNAMIC INLINE SIZE PRICING */}
+              {sizeAttr && (
+                <div className="space-y-4 pb-2">
+                  <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">
+                    Size: <span className="text-black font-bold uppercase underline decoration-neutral-900">{selectedSize}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2.5 pt-1 relative">
+                    {sizeAttr.options.map((sz: string) => {
+                      const isSelected = selectedSize?.toLowerCase() === sz?.toLowerCase();
+                      
+                      const matchingSizeVariant = initialVariations?.find((v: any) => {
+                        const hasSize = v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase());
+                        const hasColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
+                        return hasSize && hasColor;
+                      }) || initialVariations?.find((v: any) => v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase()));
+
+                      const sizePriceStr = matchingSizeVariant?.price 
+                        ? `$${parseFloat(matchingSizeVariant.price).toFixed(2)}` 
+                        : `$${parseFloat(initialProduct?.price || "0.00").toFixed(2)}`;
+
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setSelectedSize(sz)}
+                          className={`relative px-5 py-2.5 rounded-xl border transition-all duration-300 overflow-hidden select-none flex flex-col items-center justify-center min-w-[105px] text-center ${
+                            isSelected
+                              ? 'text-black border-neutral-950 font-black shadow-sm bg-white'
+                              : 'bg-neutral-50/50 border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:bg-white'
+                          }`}
+                        >
+                          {isSelected && (
+                            <motion.div 
+                              layoutId="activeSizePill"
+                              className="absolute inset-0 bg-white border-2 border-neutral-950 rounded-xl -z-10"
+                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                            />
+                          )}
+                          <span className="relative z-10 text-xs uppercase tracking-wide font-bold">{sz}</span>
+                          <span className={`relative z-10 text-[9px] mt-0.5 tracking-tighter ${isSelected ? 'text-[#C5A358] font-black' : 'text-neutral-400 font-light'}`}>
+                            {sizePriceStr}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -268,21 +422,23 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  <div className="flex items-center justify-between border-t border-gray-50 pt-6">
                     <span className="text-[10px] font-black uppercase tracking-[3px] text-gray-300 italic">Select Quantity</span>
                     <div className="flex items-center gap-8 bg-gray-50 rounded-full px-5 py-2 border border-gray-100">
-                      <button onClick={() => setQty(Math.max(1, qty-1))} className="hover:opacity-40"><Minus size={14}/></button>
-                      <span className="text-sm font-black italic">{qty}</span>
-                      <button onClick={() => setQty(qty+1)} className="hover:opacity-40"><Plus size={14}/></button>
+                      <button onClick={() => setQty(Math.max(1, qty-1))} disabled={isOutOfStock} className="disabled:opacity-20 hover:opacity-40"><Minus size={14}/></button>
+                      <span className="text-sm font-black italic">{isOutOfStock ? 0 : qty}</span>
+                      <button onClick={() => setQty(qty+1)} disabled={isOutOfStock} className="disabled:opacity-20 hover:opacity-40"><Plus size={14}/></button>
                     </div>
                  </div>
 
                  <div className="grid grid-cols-1 gap-3">
-                    <button type="button" onClick={handleReserveInBag} disabled={isAdding} className={`w-full py-5 rounded-full text-[11px] font-black uppercase tracking-[5px] transition-all duration-500 border-2 flex items-center justify-center gap-2 ${isAddedSuccess ? 'bg-[#00a65a] border-[#00a65a] text-white' : 'bg-transparent border-black text-black hover:bg-black hover:text-white'}`}>
-                      {isAdding ? <><Loader2 size={14} className="animate-spin" /> Securing Piece...</> : isAddedSuccess ? <><CheckCircle2 size={14} /> Added to Bag</> : "Reserve in Bag"}
+                    <button type="button" onClick={handleReserveInBag} disabled={isAdding || isOutOfStock} className={`w-full py-5 rounded-full text-[11px] font-black uppercase tracking-[5px] transition-all duration-500 border-2 flex items-center justify-center gap-2 ${isOutOfStock ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : isAddedSuccess ? 'bg-[#00a65a] border-[#00a65a] text-white' : 'bg-transparent border-black text-black hover:bg-black hover:text-white'}`}>
+                      {isOutOfStock ? "Sold Out" : isAdding ? <><Loader2 size={14} className="animate-spin" /> Securing Piece...</> : isAddedSuccess ? <><CheckCircle2 size={14} /> Added to Bag</> : "Reserve in Bag"}
                     </button>
                  </div>
 
-                 <div className="pt-2 z-10 relative">
-                   <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }} createOrder={(data, actions) => actions.order.create({ intent: "CAPTURE", purchase_units: [{ description: initialProduct.name, amount: { currency_code: "USD", value: (parseFloat(displayPrice) * qty).toFixed(2) } }] })} onApprove={async (data, actions) => { const details = await actions.order?.capture(); alert(`Transaction completed safely by ${details?.payer?.name?.given_name}`); }} />
-                 </div>
+                 {!isOutOfStock && (
+                   <div className="space-y-2 pt-2 z-10 relative">
+                     <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }} createOrder={(data, actions) => actions.order.create({ intent: "CAPTURE", purchase_units: [{ description: initialProduct.name, amount: { currency_code: "USD", value: (currentPriceValue * qty).toFixed(2) } }] })} onApprove={async (data, actions) => { const details = await actions.order?.capture(); alert(`Transaction completed safely by ${details?.payer?.name?.given_name}`); }} />
+                   </div>
+                 )}
 
                  <div className="border border-neutral-100 bg-[#fbfbfb] rounded-[28px] p-6 space-y-5 text-[#333333] mt-8 shadow-sm">
                     <div className="flex items-start gap-3.5 pb-4 border-b border-neutral-200/50">
@@ -324,20 +480,16 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                     </div>
                  </div>
 
-                 <div className="narrative-box bg-[#fafafa] p-6 rounded-[32px] border border-gray-100 space-y-4 max-w-full overflow-hidden relative">
-                    <div className="text-[13px] leading-relaxed text-gray-500 font-medium transition-all duration-500 max-w-full overflow-hidden break-words [&_iframe]:max-w-full [&_video]:max-w-full [&_iframe]:aspect-video [&_video]:h-auto" style={{ maxHeight: isDescExpanded ? '2000px' : '64px' }} dangerouslySetInnerHTML={{ __html: shortDescContent }} />
-                    <button type="button" onClick={() => setIsDescExpanded(!isDescExpanded)} className="text-[10px] font-black uppercase text-black underline underline-offset-8 decoration-gray-200 block mt-2">{isDescExpanded ? '— Hide Narrative' : '+ Read Narrative Details'}</button>
-                 </div>
               </div>
             </div>
           </div>
 
           <div className="mt-24 border-t border-gray-100 pt-16">
-            <div className="flex justify-center md:justify-start gap-12 border-b border-gray-100 pb-6 mb-12 overflow-x-auto no-scrollbar">
-              <button type="button" onClick={() => setActiveTab('description')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 ${activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Description</button>
-              <button type="button" onClick={() => setActiveTab('additional_info')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 ${activeTab === 'additional_info' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Additional Information</button>
-              <button type="button" onClick={() => setActiveTab('video')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 ${activeTab === 'video' ? 'border-black text-black' : 'border-transparent text-gray-300'} flex items-center gap-2`}><Play size={12} fill="currentColor"/> Product Film</button>
-              <button type="button" onClick={() => setActiveTab('reviews')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 ${activeTab === 'reviews' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>
+            <div className="flex gap-8 md:gap-12 border-b border-gray-100 pb-6 mb-12 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory whitespace-nowrap">
+              <button type="button" onClick={() => setActiveTab('description')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Description</button>
+              <button type="button" onClick={() => setActiveTab('additional_info')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'additional_info' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Additional Information</button>
+              <button type="button" onClick={() => setActiveTab('video')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'video' ? 'border-black text-black' : 'border-transparent text-gray-300'} flex items-center gap-2`}><Play size={12} fill="currentColor"/> Product Film</button>
+              <button type="button" onClick={() => setActiveTab('reviews')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'reviews' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>
                 Reviews ({totalRatingCount})
               </button>
             </div>
@@ -368,7 +520,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 <div ref={reviewsTopRef} className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
                    
                    <div className="lg:col-span-7 space-y-8">
-                      {/* Dynamic Score display block */}
                       <div className="bg-neutral-50 p-6 rounded-3xl border border-neutral-100 flex flex-col sm:flex-row items-center justify-between gap-6">
                         <div className="text-center sm:text-left">
                           <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Overall Rating</p>
@@ -391,7 +542,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                       
                       {reviewsList && reviewsList.length > 0 ? (
                         <div className="space-y-6">
-                          {/* Client-Side Paginated Slit Matrix mapping */}
                           {currentPagedReviews.map((review: any, idx: number) => {
                             const reviewerName = review.reviewer || review.comment_author || "Premium Customer";
                             let rawContent = review.review || review.comment_content || "";
@@ -414,7 +564,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                             );
                           })}
 
-                          {/* Instant Pure Client Numbered Tabs Navigation */}
                           {totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2 pt-6 border-t border-neutral-100 select-none">
                               <button
@@ -481,15 +630,58 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
             </div>
           </div>
 
+          {initialRelated && initialRelated.length > 0 && (
+            <div className="mt-28 border-t border-gray-100 pt-16">
+              <div className="flex items-baseline justify-between mb-10">
+                <h2 className="text-3xl font-serif italic tracking-tighter text-black">
+                  You May Also Archive <span className="text-[#C5A358]">.</span>
+                </h2>
+                <p className="text-[10px] font-black uppercase tracking-[3px] text-gray-400 italic">Curated Selection</p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 lg:gap-8">
+                {initialRelated.slice(0, 4).map((product: any) => {
+                  const productImg = product.images?.[0]?.src || "";
+                  const relRegPrice = product.regular_price;
+                  const relCurrPrice = product.price;
+                  const relShowSale = relRegPrice && parseFloat(relRegPrice) > parseFloat(relCurrPrice);
+
+                  return (
+                    <Link href={`/product/${product.id}`} key={product.id} className="group flex flex-col space-y-4 cursor-pointer">
+                      <div className="aspect-[3/4] w-full bg-[#fafafa] rounded-[24px] overflow-hidden p-6 border border-gray-50 flex items-center justify-center relative shadow-sm transition-all duration-500 group-hover:shadow-md">
+                        {productImg ? (
+                          <img src={productImg} alt={product.name} className="max-h-full max-w-full object-contain select-none transition-transform duration-700 group-hover:scale-105" />
+                        ) : (
+                          <div className="text-gray-300 text-[10px] font-black uppercase tracking-wider">No Canvas</div>
+                        )}
+                        {relShowSale && (
+                          <span className="absolute top-4 left-4 bg-black text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">Sale</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1 px-1">
+                        <h3 className="text-sm font-medium text-neutral-800 line-clamp-1 group-hover:text-black transition-colors">{product.name}</h3>
+                        <div className="flex items-baseline gap-2 pt-0.5">
+                          <span className="text-sm font-black italic text-black">${relCurrPrice || "0.00"}</span>
+                          {relRegPrice && <span className="text-xs text-gray-400 line-through font-light">${relRegPrice}</span>}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
 
       <AnimatePresence>
         {isZoomOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/95 z-[5000] flex flex-col items-center justify-center p-4">
-            <button type="button" onClick={() => setIsZoomOpen(false)} className="absolute top-6 right-6 text-white bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/10 active:scale-95 transition-transform"><X size={20} /></button>
+            <button type="button" onClick={() => { setIsZoomOpen(false); }} className="absolute top-6 right-6 text-white bg-white/10 p-3 rounded-full backdrop-blur-md border border-white/10 active:scale-95 transition-transform"><X size={20} /></button>
             <div className="w-full h-full max-h-[75vh] flex items-center justify-center">
-              <motion.img initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 0 }} src={activeImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Enlarged Vault View" />
+              <img src={activeImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Enlarged Vault View" />
             </div>
             <p className="text-[10px] tracking-[4px] uppercase text-gray-500 mt-4 font-black">Vault Piece {currentImgIndex + 1} of {images.length || 1}</p>
           </motion.div>

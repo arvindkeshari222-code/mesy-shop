@@ -1,64 +1,107 @@
+"use client";
 import React from 'react';
-import { Star, ShoppingCart } from 'lucide-react';
+import { Star, ShoppingBag } from 'lucide-react';
+import Link from 'next/link';
 
-// Sample Data (Baad mein ye WooCommerce API se aayega)
-const products = [
-  { id: 1, name: "Premium Wireless Earbuds", price: 49.99, rating: 4.8, reviews: 124, image: "https://via.placeholder.com/300" },
-  { id: 2, name: "Smart Home Security Camera", price: 89.00, rating: 4.5, reviews: 89, image: "https://via.placeholder.com/300" },
-  { id: 3, name: "Minimalist Leather Watch", price: 120.00, rating: 4.9, reviews: 210, image: "https://via.placeholder.com/300" },
-  { id: 4, name: "Portable Power Bank 20k", price: 35.50, rating: 4.7, reviews: 56, image: "https://via.placeholder.com/300" },
-];
+interface ProductGridProps {
+  products?: any[];
+  title?: string;
+}
 
-const ProductGrid: React.FC = () => {
+const ProductGrid: React.FC<ProductGridProps> = ({ products = [], title = "Featured Collections" }) => {
+  
+  // Agar page se array pass na ho, toh safety filter text display block
+  const displayItems = products && products.length > 0 ? products : [];
+
+  if (displayItems.length === 0) return null;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <h2 className="text-2xl font-bold mb-8 text-gray-800">Featured Collections</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <div key={product.id} className="group bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-2xl transition-all duration-300">
-            {/* Image Container */}
-            <div className="relative aspect-square overflow-hidden bg-gray-100">
-              <img 
-                src={product.image} 
-                alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute top-2 right-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded">
-                NEW
-              </div>
-            </div>
+    <section className="w-full py-8 px-6 bg-white my-6 max-w-[1550px] mx-auto shadow-sm rounded-[32px] border border-gray-50 group">
+      
+      {/* Luxury Header Bar */}
+      <div className="flex justify-between items-baseline mb-8 select-none">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-serif italic text-black">
+            {title.split(' ')[0]} <span className="text-gray-300">{title.split(' ').slice(1).join(' ')}</span>
+          </h2>
+          <p className="text-[10px] font-black uppercase tracking-[3px] text-[#C5A358]">
+            MESY Atelier Signature Pieces
+          </p>
+        </div>
+        <Link href="/shop" className="text-xs font-bold text-black border-b border-black cursor-pointer hover:text-[#C5A358] hover:border-[#C5A358] transition-all">
+          View All
+        </Link>
+      </div>
 
-            {/* Details */}
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 h-10">
-                {product.name}
-              </h3>
-              
-              {/* Ratings */}
-              <div className="flex items-center mt-2 gap-1">
-                <div className="flex text-yellow-400">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} fill={i < Math.floor(product.rating) ? "currentColor" : "none"} />
-                  ))}
+      {/* Fully Responsive Grid Matrix Structure */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {displayItems.map((product) => {
+          const productTitle = product.name || "Atelier Core Artifact";
+          const productPrice = product.price || "0.00";
+          const productImage = product.images?.[0]?.src || product.image || "";
+          const reviewCount = product.rating_count || product.reviews || "0";
+
+          return (
+            <Link 
+              key={product.id} 
+              href={`/product/${product.id}`}
+              className="group/item flex flex-col justify-between cursor-pointer"
+            >
+              <div>
+                {/* Image Container with Luxury Fluid Aspect */}
+                <div className="relative aspect-[4/5] overflow-hidden bg-[#F9F9FB] rounded-[24px] border border-gray-50 group-hover/item:border-yellow-200 transition-all duration-500">
+                  <img 
+                    src={productImage || 'https://via.placeholder.com/400'} 
+                    alt={productTitle}
+                    className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-700"
+                  />
+                  {product.on_sale && (
+                    <div className="absolute top-4 left-4 bg-black text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                      Sale
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs text-gray-500">({product.reviews})</span>
+
+                {/* Details Typography Block */}
+                <div className="p-2 space-y-1.5 mt-2">
+                  <p className="text-[10px] font-bold text-[#C5A358] uppercase tracking-widest">
+                    {product.brands?.[0]?.name || "ATELIER EDITIONS"}
+                  </p>
+                  <h3 className="text-sm font-serif italic text-black group-hover/item:text-[#C5A358] transition-colors line-clamp-1">
+                    {productTitle}
+                  </h3>
+                  
+                  {/* Fine-tuned Monochromatic Star Ratings */}
+                  <div className="flex items-center gap-1 select-none">
+                    <div className="flex text-[#C5A358]">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={10} fill={i < 4 ? "#C5A358" : "none"} className={i < 4 ? "text-[#C5A358]" : "text-gray-200"} />
+                      ))}
+                    </div>
+                    <span className="text-[9px] font-bold text-gray-400 ml-1">({reviewCount})</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Price & Action */}
-              <div className="mt-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs text-gray-500 block leading-none">Price</span>
-                  <span className="text-xl font-bold text-gray-900">${product.price}</span>
+              {/* Price & Action Interaction Layer */}
+              <div className="mt-3 p-2 pt-0 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xl font-light text-black tracking-tighter">
+                    ${parseFloat(productPrice).toFixed(2)}
+                  </span>
                 </div>
-                <button className="bg-[#0f1111] hover:bg-blue-600 text-white p-2.5 rounded-full transition-all shadow-lg active:scale-95">
-                  <ShoppingCart size={18} />
+                
+                {/* Luxury Bag Bag Button Icon */}
+                <button className="bg-black text-white p-3 rounded-full hover:bg-[#C5A358] transition-all duration-500 shadow-xl shadow-black/5 active:scale-95">
+                  <ShoppingBag size={14} />
                 </button>
               </div>
-            </div>
-          </div>
-        ))}
+
+            </Link>
+          );
+        })}
       </div>
-    </div>
+    </section>
   );
 };
 
