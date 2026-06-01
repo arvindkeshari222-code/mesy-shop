@@ -26,7 +26,16 @@ const api = new (WooCommerceRestApi as any)({
   }
 });
 
-// 🎯 DYNAMIC SUB-COMPONENT: Clean 3:4 portrait view without enclosing border frames
+// 🎯 Nayi IDs ke liye Text Names Mapping taaki Header Title kharab na ho
+const categoryColorMap: { [key: string]: string } = {
+  "200": "BLACK ARCHIVE",
+  "201": "PARADISE PINK",
+  "202": "SUN KISSED BROWN",
+  "203": "CRISP WHITE",
+  "204": "NAVY ARCHIVE"
+};
+
+// 🎯 DYNAMIC SUB-COMPONENT: (Jaisa tumhara pehle tha, bilkul touch nahi kiya)
 const ProductCardGridItem = ({ product, idx }: { product: any; idx: number }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
@@ -54,19 +63,16 @@ const ProductCardGridItem = ({ product, idx }: { product: any; idx: number }) =>
 
   return (
     <div ref={cardRef} className="relative block group bg-white w-full text-left">
-      {/* Invisible global interactive pardah layer preserved */}
       <Link href={`/product/${product.id}`} className="absolute inset-0 z-50 cursor-pointer w-full h-full" aria-label={product.name} />
       
       <Reveal delay={0.03 * idx}>
         <div className="space-y-4 w-full">
           
-          {/* 👑 FIXED HOUSING OVERHAUL: Stripped bg-fafafa, rounded-24px, and paddings completely */}
           <div className="relative aspect-[3/4] bg-white border border-neutral-100 overflow-hidden w-full mb-3 rounded-none">
             {product.images?.[0]?.src ? (
               <img 
                 src={product.images[0].src} 
                 alt={product.name}
-                // 🔥 KINETIC INVERSION ENGINE: Sharp, high-dimension vertical lines with grayscale on hover/scroll
                 className={`w-full h-full object-cover object-center scale-100 group-hover:scale-[1.02] transition-all duration-[800ms] ease-out select-none mix-blend-multiply ${
                   isIntersecting 
                     ? 'grayscale-0 md:grayscale group-hover:grayscale-0' 
@@ -77,11 +83,9 @@ const ProductCardGridItem = ({ product, idx }: { product: any; idx: number }) =>
               <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-[9px] font-black text-neutral-300 uppercase tracking-widest rounded-none">No Image</div>
             )}
             
-            {/* Elegant horizontal hover response anchor line */}
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-black scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20" />
           </div>
 
-          {/* Product Typography Specifications metadata */}
           <div className="space-y-1 px-1 w-full">
             <div className="flex justify-between items-start gap-2 w-full">
               <h2 className="text-[11px] font-bold text-neutral-400 group-hover:text-black transition-colors line-clamp-1 uppercase tracking-[2px] leading-none">
@@ -118,19 +122,54 @@ export default function CategoryPage() {
     const fetchCategoryAndProducts = async () => {
       try {
         setLoading(true);
-        const catRes = await api.get("products/categories", { 
-          slug: String(slug).trim() 
-        });
+        const currentParam = String(slug).trim();
         
-        const category = catRes.data?.[0];
-        setCategoryData(category);
+        // 🔥 SMART ROUTER LOGIC: Check karo URL me ID (200) hai ya string slug (men)
+        const isId = !isNaN(Number(currentParam)); 
 
-        if (category) {
+        let targetCategoryId = null;
+
+        if (isId) {
+          // A. Agar ID aayi hai (Jaise 200, 201, 204 from custom grid)
+          try {
+            const catRes = await api.get(`products/categories/${currentParam}`);
+            if (catRes.data) {
+              targetCategoryId = catRes.data.id;
+              setCategoryData({
+                id: catRes.data.id,
+                name: categoryColorMap[currentParam] || catRes.data.name,
+                image: catRes.data.image
+              });
+            }
+          } catch (err) {
+            // Safe fallback logic agar category abhi dashboard par create na hui ho
+            targetCategoryId = currentParam;
+            setCategoryData({
+              id: currentParam,
+              name: categoryColorMap[currentParam] || "COLOR ARCHIVE",
+              image: null
+            });
+          }
+        } else {
+          // B. Agar standard slug aaya hai (Jaise 'men', 'women' etc)
+          const catRes = await api.get("products/categories", { slug: currentParam });
+          const category = catRes.data?.[0];
+          if (category) {
+            targetCategoryId = category.id;
+            setCategoryData(category);
+          }
+        }
+
+        // WooCommerce se target products pull karo
+        if (targetCategoryId) {
           const prodRes = await api.get("products", { 
-            category: category.id, 
-            per_page: 50 
+            category: targetCategoryId, 
+            per_page: 50,
+            status: 'publish'
           });
           setProducts(prodRes.data);
+        } else {
+          setProducts([]);
         }
       } catch (error) {
         console.error("Category Fetch Error:", error);
@@ -142,6 +181,7 @@ export default function CategoryPage() {
     if (slug) fetchCategoryAndProducts();
   }, [slug]);
 
+  // Sidebar dynamic filters functionality (Aise hi rehne diya hai)
   const filteredProducts = products.filter((product) => {
     if (selectedColor) {
       const targetColor = selectedColor.toLowerCase();
@@ -201,7 +241,7 @@ export default function CategoryPage() {
 
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative">
           
-          {/* LEFT SIDEBAR: Static Filters Panel */}
+          {/* LEFT SIDEBAR */}
           <aside className="col-span-1 lg:col-span-3 w-full space-y-10 pr-0 lg:pr-6 lg:sticky lg:top-28 text-left border-b lg:border-b-0 pb-8 lg:pb-0 border-neutral-100 z-40">
             
             <div className="space-y-4">
@@ -253,7 +293,7 @@ export default function CategoryPage() {
 
           </aside>
 
-          {/* RIGHT COLUMN: Switched data layer feed to connect high-height portrait component */}
+          {/* RIGHT COLUMN */}
           <section className="col-span-1 lg:col-span-9 w-full">
             {filteredProducts.length === 0 ? (
               <div className="text-center py-20 text-neutral-400 text-xs uppercase tracking-widest">

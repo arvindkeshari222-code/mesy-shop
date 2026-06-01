@@ -4,7 +4,6 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 const BrandShowcase = () => {
-  // Isko tumhaari top master categories ke sath link kar diya hai
   const categories = [
     {
       name: "MESY Tech",
@@ -31,7 +30,7 @@ const BrandShowcase = () => {
           <Link
             href={cat.link}
             key={idx}
-            className={`${cat.bgClass} h-[450px] md:h-[500px] rounded-[32px] relative overflow-hidden group cursor-pointer flex flex-col items-center justify-center text-center p-12 shadow-sm border border-gray-100/10`}
+            className={`${cat.bgClass} h-[450px] md:h-[500px] rounded-[32px] relative overflow-hidden group cursor-pointer flex flex-col items-center justify-center text-center p-12 shadow-sm border border-gray-100/10 transition-transform duration-500 hover:scale-[1.01]`}
           >
             {/* Background Big Typography Text Effect */}
             <div className="absolute top-12 left-1/2 -translate-x-1/2 opacity-[0.03] md:opacity-[0.05] select-none pointer-events-none w-full">

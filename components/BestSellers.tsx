@@ -104,11 +104,12 @@ const BestSellers = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await api.get("products", {
-          per_page: 12,
-          status: 'publish',
-          orderby: 'popularity'
-        });
+     const { data } = await api.get("products", {
+  per_page: 8,
+  status: 'publish',
+  orderby: 'date',
+  _fields: 'id,name,price,images,on_sale,regular_price' // Bas itna hi mangwao
+});
 
         const uniqueData = data.filter(
           (product: any, index: number, self: any[]) =>
