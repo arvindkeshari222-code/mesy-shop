@@ -1,12 +1,11 @@
-import { NextConfig } from "next";
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Typescript errors ignore karne ke liye
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Images ke liye setup (tumhara pehle se sahi hai)
   images: {
     remotePatterns: [
       {
