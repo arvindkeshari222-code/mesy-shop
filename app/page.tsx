@@ -27,17 +27,16 @@ export default async function Home() {
   let petsProducts = [];
 
   try {
-    // 🎯 ID SYNCED: Category '155' ko hatakar correct ID '44' map kar diya hai!
     const [summerRes, mobileRes, wellnessRes, toysRes, categoriesRes, menRes, womenRes, petsRes] = await Promise.all([
-      api.get('products', { category: '47', per_page: 12, status: 'publish' }).catch(() => ({ data: [] })),
-      api.get('products', { category: '44', per_page: 12, status: 'publish' }).catch(() => ({ data: [] })), // FIXED HERE
-      api.get('products', { category: '154', per_page: 12, status: 'publish' }).catch(() => ({ data: [] })),
-      api.get('products', { category: '150', per_page: 12, status: 'publish' }).catch(() => ({ data: [] })), 
-      api.get('products/categories', { per_page: 100 }).catch(() => ({ data: [] })),
+      api.get('products', { category: '47', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '44', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '154', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '150', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
+      api.get('products/categories', { per_page: 100, next: { revalidate: 60 } }).catch(() => ({ data: [] })),
       
-      api.get('products', { category: '160', per_page: 4, status: 'publish' }).catch(() => ({ data: [] })), 
-      api.get('products', { category: '161', per_page: 4, status: 'publish' }).catch(() => ({ data: [] })), 
-      api.get('products', { category: '162', per_page: 4, status: 'publish' }).catch(() => ({ data: [] }))
+      api.get('products', { category: '160', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
+      api.get('products', { category: '161', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
+      api.get('products', { category: '162', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] }))
     ]);
 
     const filterUnique = (arr: any[]) => arr.filter((p, i, s) => s.findIndex((t) => t.id === p.id) === i);
@@ -65,50 +64,40 @@ export default async function Home() {
 
         <div className="max-w-[1500px] mx-auto px-4 md:px-6 -mt-32 md:-mt-52 relative z-30 pointer-events-auto space-y-16 pb-20">
           
-          {/* 1. BEST SELLERS GRID */}
           <Reveal>
             <BestSellers />
           </Reveal>
 
-          {/* 2. CATEGORY QUICK SLIDER */}
           <CollectionSlider categories={allCategories} />
 
-          {/* 3. SEASONAL & TRENDING (The Summer Edit) */}
           <Reveal>
             <SeasonalTrends products={summerProducts} />
           </Reveal>
 
-          {/* 🔴 LIVE SECTION 1: MEN PRODUCTS */}
           <Reveal>
             <ProductRowSection title="MEN ARCHIVE" slug="men" products={menProducts} />
           </Reveal>
 
-          {/* 4. TECH & INNOVATION (Mobile Suite) */}
           <Reveal>
             <MobileSection products={mobileProducts} />
           </Reveal>
 
-          {/* 🔴 LIVE SECTION 2: WOMEN SILHOUETTES */}
           <Reveal>
             <ProductRowSection title="WOMEN SILHOUETTES" slug="women" products={womenProducts} />
           </Reveal>
 
-          {/* 5. DYNAMIC TOYS & COLLECTIBLES SECTION */}
           <Reveal>
             <ToysSection products={toysProducts} />
           </Reveal>
 
-          {/* 🔴 LIVE SECTION 3: PETS COLLECTIVE */}
           <Reveal>
             <ProductRowSection title="PETS ARCHIVE" slug="pets" products={petsProducts} />
           </Reveal>
 
-          {/* 6. WELLNESS & BODY (Mindful Care) */}
           <Reveal>
             <BeautySection products={wellnessProducts} />
           </Reveal>
 
-          {/* 7. BRAND EXPERIENCE & HISTORY */}
           <Reveal>
             <BrandShowcase />
           </Reveal>
@@ -121,7 +110,6 @@ export default async function Home() {
             <BrowsingHistory />
           </Reveal>
 
-          {/* Luxury Atelier Footer Banner */}
           <Reveal>
             <div className="w-full h-48 bg-white shadow-sm flex items-center justify-center border border-gray-100 group cursor-pointer overflow-hidden rounded-[24px] relative">
                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity" />
