@@ -28,17 +28,15 @@ export default async function Home() {
 
   try {
     const [summerRes, mobileRes, wellnessRes, toysRes, categoriesRes, menRes, womenRes, petsRes] = await Promise.all([
-      api.get('products', { category: '47', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-      api.get('products', { category: '44', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-      api.get('products', { category: '154', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-      api.get('products', { category: '150', per_page: 12, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
-      api.get('products/categories', { per_page: 100, next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-      
-      api.get('products', { category: '160', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
-      api.get('products', { category: '161', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] })), 
-      api.get('products', { category: '162', per_page: 4, status: 'publish', next: { revalidate: 60 } }).catch(() => ({ data: [] }))
-    ]);
-
+  api.get('products', { category: '47', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '44', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '154', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '150', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products/categories', { per_page: 50, next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '160', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '161', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+  api.get('products', { category: '162', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] }))
+]);
     const filterUnique = (arr: any[]) => arr.filter((p, i, s) => s.findIndex((t) => t.id === p.id) === i);
 
     summerProducts = filterUnique(summerRes.data);
