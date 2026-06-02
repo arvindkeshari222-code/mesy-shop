@@ -16,12 +16,12 @@ const playfair = Playfair_Display({
   style: ['italic', 'normal']
 });
 
-// 🎯 UPDATED METADATA WITH GOOGLE VERIFICATION
+// 🎯 CLEAN FIXED METADATA (No extra characters)
 export const metadata: Metadata = {
   title: "MESY Global | Luxury Atelier",
   description: "Premium shopping experience",
   verification: {
-    google: "jPn0_3VyJDucQk8qw1f7JtKLWacO5VtVJbYrm自由GUI",
+    google: "jPn0_3VyJDucQk8qw1f7JtKLWacO5VtVJbYrmhtuGUI",
   },
 };
 
