@@ -3,6 +3,8 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/app/context/CartContext"; 
 import Header from "@/components/Header";
+// 🎯 1. IMPORT SCRIPT FOR ANALYTICS PERFORMANCE OPTIMIZATION
+import Script from "next/script";
 
 const inter = Inter({ 
   subsets: ["latin"], 
@@ -16,7 +18,6 @@ const playfair = Playfair_Display({
   style: ['italic', 'normal']
 });
 
-// 🎯 CLEAN FIXED METADATA (No extra characters)
 export const metadata: Metadata = {
   title: "MESY Global | Luxury Atelier",
   description: "Premium shopping experience",
@@ -30,12 +31,31 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // 🎯 2. REAL GOOGLE ANALYTICS ID ASSIGNMENT
+  const GA_MEASUREMENT_ID = "G-ZS6KHPLZ8J";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body 
         className={`${inter.variable} ${playfair.variable} antialiased bg-[#f2f2f2]`}
         suppressHydrationWarning
       >
+        {/* 🎯 3. HIGH PERFORMANCE INJECTOR FOR GA4 PIPELINE */}
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+
         <CartProvider>
           <Header />
           <main className="pt-20"> {/* Header fixed hai toh padding zaruri hai */}
