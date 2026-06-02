@@ -28,21 +28,27 @@ export default async function Home() {
 
   try {
     const [summerRes, mobileRes, wellnessRes, toysRes, categoriesRes, menRes, womenRes, petsRes] = await Promise.all([
-  api.get('products', { category: '47', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '44', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '154', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '150', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products/categories', { per_page: 50, next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '160', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '161', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-  api.get('products', { category: '162', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] }))
-]);
+      api.get('products', { category: '47', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '44', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '154', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '150', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      
+      // 🔥 MASTER FIX FOR CIRCLES: Added timestamp to break WordPress cache & dropped revalidate to 10s
+      api.get('products/categories', { per_page: 50, _timestamp: Date.now(), next: { revalidate: 10 } }).catch(() => ({ data: [] })),
+      
+      api.get('products', { category: '160', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '161', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '162', per_page: 4, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] }))
+    ]);
+
     const filterUnique = (arr: any[]) => arr.filter((p, i, s) => s.findIndex((t) => t.id === p.id) === i);
 
     summerProducts = filterUnique(summerRes.data);
     mobileProducts = filterUnique(mobileRes.data);
     wellnessProducts = filterUnique(wellnessRes.data);
     toysProducts = filterUnique(toysRes.data); 
+    
+    // 🔥 Saari categories (with brand new images) ab bina freeze hue isme aayengi
     allCategories = categoriesRes.data;
     
     menProducts = filterUnique(menRes.data);
@@ -100,6 +106,7 @@ export default async function Home() {
             <BrandShowcase />
           </Reveal>
 
+          {/* 👑 TUMHARA DYNAMIC CIRCLE GRID SEAMLESSLY REFRESHED HERE */}
           <Reveal>
             <CategoryCircle categories={allCategories} />
           </Reveal>

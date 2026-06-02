@@ -4,11 +4,11 @@ import Link from 'next/link';
 
 export default function CategoryColorGrid() {
   const colors = [
-    { name: "SUN KISSED BROWN", id: 202, desc: "A resort-ready shade that's ready for your next getaway.", img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80", hex: "#825C4D", textColor: "text-white" },
-    { name: "PARADISE PINK", id: 201, desc: "Bold, bright, and bound to make a statement.", img: "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=800&q=80", hex: "#FF8DC5", textColor: "text-white" },
-    { name: "NAVY", id: 204, desc: "This modern classic is bolder, bluer, and goes with everything.", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80", hex: "#262C38", textColor: "text-white" },
-    { name: "WHITE", id: 203, desc: "Head-to-toe or paired with bright hues, crisp white always works.", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80", hex: "#FFFFFF", textColor: "text-black" },
-    { name: "BLACK", id: 200, desc: "The studio-to-street classic you can always count on.", img: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80", hex: "#000000", textColor: "text-white" },
+    { name: "SUN KISSED BROWN", id: 202, desc: "A resort-ready shade that's ready for your next getaway.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/S0feb13d13e1241f0b1ff586489ad7610a.jpg_960x960q75.jpg_.avif", hex: "#825C4D", textColor: "text-white" },
+    { name: "PARADISE PINK", id: 201, desc: "Bold, bright, and bound to make a statement.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/Sc0e763d9bd5945c18341af2c0ce283a5J.webp", hex: "#FF8DC5", textColor: "text-white" },
+    { name: "NAVY", id: 204, desc: "This modern classic is bolder, bluer, and goes with everything.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/Sf7068f0e3d98488da3b5a3589a979d1aT.jpg_960x960q75.jpg_.avif", hex: "#262C38", textColor: "text-white" },
+    { name: "WHITE", id: 203, desc: "Head-to-toe or paired with bright hues, crisp white always works.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/S90f7c9542237402c8b845a364a89e9cec.jpg_960x960q75.jpg_.avif", hex: "#FFFFFF", textColor: "text-black" },
+    { name: "BLACK", id: 200, desc: "The studio-to-street classic you can always count on.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/Sc34684f8b8d9409491b7c09c4787ac7eI.jpg_960x960q75.jpg_.avif", hex: "#000000", textColor: "text-white" },
   ];
 
   return (
