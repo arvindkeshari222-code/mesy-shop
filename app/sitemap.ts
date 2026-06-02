@@ -1,12 +1,14 @@
 import { MetadataRoute } from 'next';
 
-// 1. Direct fetch call fallback configuration (Axios wrap bypass for next build runtime)
 const URL = "https://dev-mesy.pantheonsite.io/wp-json/wc/v3";
 const CK = "ck_9304120bd6878947f779772c8e03d522eb450ad9";
 const CS = "cs_08ae962d4f00a7bc2793ed847965f6f3a764bc73";
 
 // Live Domain Base URL
 const baseUrl = "https://www.mesy.shop";
+
+// Explicit Basic Auth Token (Pantheon Cloud Firewall Bypass)
+const token = Buffer.from(`${CK}:${CS}`).toString('base64');
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
@@ -19,9 +21,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let categoryEntries: MetadataRoute.Sitemap = [];
 
   try {
-    // 2. Fetch Products with Native Fetch Engine (Works perfectly on Vercel deployment)
-    const productsRes = await fetch(`${URL}/products?consumer_key=${CK}&consumer_secret=${CS}&per_page=100&status=publish`, {
-      next: { revalidate: 3600 } // Build time pipeline safe execution
+    // 1. Fetch Products with Explicit Auth Headers & No-Cache
+    const productsRes = await fetch(`${URL}/products?per_page=100&status=publish`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${token}`,
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store' // Live raw data pipeline integration
     });
     
     if (productsRes.ok) {
@@ -36,16 +43,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    // 3. Fetch Categories & Subcategories with Native Fetch
-    const categoriesRes = await fetch(`${URL}/products/categories?consumer_key=${CK}&consumer_secret=${CS}&per_page=100`, {
-      next: { revalidate: 3600 }
+    // 2. Fetch Categories & Subcategories
+    const categoriesRes = await fetch(`${URL}/products/categories?per_page=100`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${token}`,
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-store'
     });
 
     if (categoriesRes.ok) {
       const categories = await categoriesRes.json();
       if (Array.isArray(categories)) {
         categoryEntries = categories.map((category: any) => {
-          // Fallback parsing for numeric color paths vs text layouts
           const pathSegment = isNaN(Number(category.slug)) ? category.slug : category.id;
           return {
             url: `${baseUrl}/category/${pathSegment}`,
@@ -57,9 +68,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
   } catch (error) {
-    console.error("Vercel production sitemap stream breakdown:", error);
+    console.error("Sitemap compilation tracking error:", error);
   }
 
-  // Combine everything seamlessly
+  // Final merge execution
   return [...staticPages, ...categoryEntries, ...productEntries];
 }
