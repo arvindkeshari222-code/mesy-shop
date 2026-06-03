@@ -244,6 +244,8 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             <div className="col-span-1 lg:col-span-7 flex flex-col md:flex-row gap-6 lg:sticky lg:top-32">
+              
+              {/* 1. DESKTOP ONLY: SIDE THUMBNAILS (UNTOUCHED SAFE ZONE) */}
               <div className="hidden lg:flex flex-col gap-4 w-24 shrink-0 overflow-y-auto no-scrollbar max-h-[600px]">
                 {images.map((img: any, i: number) => (
                   <button key={i} onMouseEnter={() => { setActiveImage(img.src); setCurrentImgIndex(i); }} className={`aspect-[3/4] w-full rounded-2xl overflow-hidden p-2 border-2 transition-all bg-[#fbfbfb] ${activeImage === img.src ? 'border-black scale-105' : 'border-transparent opacity-40'}`}>
@@ -252,31 +254,44 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 ))}
               </div>
 
+              {/* 2. DESKTOP ONLY: MAIN IMAGE BOX WITH HOVER ZOOM (UNTOUCHED SAFE ZONE) */}
               <div 
-                onClick={() => { if (window.innerWidth < 1024) setIsZoomOpen(true); }} 
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => setZoomStyle({ display: 'none', backgroundPosition: '0% 0%' })}
-                className="flex-1 aspect-square bg-[#fafafa] rounded-[24px] lg:rounded-[40px] flex items-center justify-center p-6 lg:p-12 border border-gray-50 relative cursor-pointer lg:cursor-crosshair overflow-hidden group shadow-sm w-full h-auto max-h-[450px] md:max-h-none"
+                className="hidden lg:flex flex-1 aspect-square bg-[#fafafa] rounded-[40px] items-center justify-center p-12 border border-gray-50 relative cursor-crosshair overflow-hidden group shadow-sm"
               >
                 {activeImage ? (
-                  <img src={activeImage} className="max-h-full max-w-full w-auto h-auto object-contain select-none transition-none group-hover:opacity-0" alt="Master" />
+                  <img src={activeImage} className="max-h-full max-w-full w-auto h-auto object-contain select-none group-hover:opacity-0" alt="Master Product Preview" />
                 ) : (
                   <div className="text-gray-300 text-xs font-bold uppercase tracking-widest">No Image Loaded</div>
                 )}
-                
-                <div className="absolute inset-0 z-10 pointer-events-none hidden lg:block bg-no-repeat rounded-[40px]" style={zoomStyle as any} />
-                <div className="lg:hidden absolute top-4 right-4 bg-white/80 p-2 rounded-full border border-gray-100 shadow-sm text-gray-400 z-20"><ZoomIn size={14} /></div>
+                <div className="absolute inset-0 z-10 pointer-events-none bg-no-repeat rounded-[40px]" style={zoomStyle as any} />
+              </div>
+
+              {/* 3. MOBILE ONLY: SEPARATE BLOCK (NO MORE SIZING JUMPS, FULL SIZE MODE) */}
+              <div className="block lg:hidden w-full bg-[#fafafa] rounded-[24px] overflow-hidden border border-gray-100 relative shadow-sm">
+                <div className="w-full aspect-[3/4] relative">
+                  <img 
+                    src={activeImage} 
+                    className="w-full h-full object-cover select-none" 
+                    alt="Mobile Preview" 
+                    onClick={() => setIsZoomOpen(true)}
+                  />
+                </div>
                 
                 {images.length > 1 && (
                   <>
-                    <button onClick={prevImage} type="button" className="lg:hidden absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/95 border border-gray-100 shadow rounded-full flex items-center justify-center text-black z-30"><ChevronLeft size={16} strokeWidth={2.5} /></button>
-                    <button onClick={nextImage} type="button" className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/95 border border-gray-100 shadow rounded-full flex items-center justify-center text-black z-30"><ChevronRight size={16} strokeWidth={2.5} /></button>
-                    <div className="lg:hidden absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30">
-                      {images.map((_: any, idx: number) => <button key={idx} type="button" onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(idx); setActiveImage(images[idx]?.src || ""); }} className={`h-1 transition-all duration-300 rounded-full ${idx === currentImgIndex ? 'w-3 bg-black' : 'w-1 bg-gray-300'}`} />)}
+                    <button onClick={prevImage} type="button" className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-black shadow-md z-30 active:scale-95"><ChevronLeft size={18} strokeWidth={2.5} /></button>
+                    <button onClick={nextImage} type="button" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-black shadow-md z-30 active:scale-95"><ChevronRight size={18} strokeWidth={2.5} /></button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 bg-black/10 px-2 py-1 rounded-full backdrop-blur-sm">
+                      {images.map((_, idx: number) => (
+                        <button key={idx} type="button" onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(idx); setActiveImage(images[idx]?.src || ""); }} className={`h-1.5 rounded-full transition-all ${idx === currentImgIndex ? 'w-3 bg-black' : 'w-1.5 bg-gray-400'}`} />
+                      ))}
                     </div>
                   </>
                 )}
               </div>
+
             </div>
 
             <div className="col-span-1 lg:col-span-5 space-y-10">
@@ -300,7 +315,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                      <span className="text-4xl font-light tracking-tighter italic text-black underline underline-offset-8 decoration-gray-100">
                        ${currentPriceValue.toFixed(2)}
                      </span>
-                     {/* 🎯 FIXED: Text color kept standard gray-400, but strike-through line color set to sharp red via decoration-[#E14B4B] */}
                      <span className="text-xl font-light text-gray-400 line-through tracking-tighter decoration-[#E14B4B]">
                        ${regPriceValue.toFixed(2)}
                      </span>
@@ -369,7 +383,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 </div>
               )}
 
-              {/* 📏 ULTRA-PREMIUM MATRIX WITH DYNAMIC INLINE SIZE PRICING */}
+              {/* 📏 SIZE CHIPS */}
               {sizeAttr && (
                 <div className="space-y-4 pb-2">
                   <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">
