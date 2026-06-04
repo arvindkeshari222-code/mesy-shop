@@ -340,15 +340,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
       <div className="bg-white min-h-screen text-[#1a1a1a] antialiased">
         <main className="max-w-[1450px] mx-auto px-4 lg:px-12 pt-28 lg:pt-32 pb-20">
           
-          {/* MOBILE EXCLUSIVE TITLE BAR WITH RATING PERSISTENCE */}
+          {/* MOBILE EXCLUSIVE TITLE BAR */}
           <div className="lg:hidden mb-6 space-y-2">
              <p className="text-[9px] font-black uppercase tracking-[5px] text-gray-400 italic">Signature Archive • SKU: {currentProduct.sku || '00'}</p>
-             {averageRating > 0 && (
-                <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold text-neutral-800">
-                  <span className="bg-neutral-100 px-2 py-0.5 rounded text-[10px]">{averageRating.toFixed(1)} ★</span>
-                  <span className="text-neutral-400 font-normal">({totalRatingCount} verified reviews)</span>
-                </div>
-              )}
+             {/* ❌ DUPLICATE RATING REMOVED FROM HERE */}
              <h1 className="text-2xl font-serif italic tracking-tighter leading-tight text-black">{currentProduct.name}</h1>
           </div>
 
@@ -475,14 +470,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
             <div className="col-span-1 lg:col-span-5 space-y-10">
               <header className="hidden lg:block space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-[6px] text-gray-400 italic">Signature Archive • SKU: {currentProduct.sku || '00'}</p>
-                
-                {averageRating > 0 && (
-                  <div className="flex items-center gap-1.5 pt-0.5 text-xs font-bold text-neutral-800">
-                    <span className="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">{averageRating.toFixed(1)} ★</span>
-                    <span className="text-neutral-400 font-normal">Based on {totalRatingCount} verified ratings</span>
-                  </div>
-                )}
-                
+                {/* ❌ DUPLICATE RATING REMOVED FROM HERE TOO */}
                 <h1 className="text-4xl lg:text-5xl font-serif italic tracking-tighter leading-tight pt-1">{currentProduct.name}</h1>
               </header>
 
@@ -499,7 +487,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                        ${regPriceValue.toFixed(2)}
                      </span>
                      
-                     {/* 🌟 PREMIUM CONVERSION PILL BADGE JODHA HAI HAPAAR */}
+                     {/* 🌟 ONLY KEEPING THIS PREMIUM PRICE-ADJACENT RATING BADGE NOW */}
                      {averageRating > 0 && (
                         <div className="flex items-center gap-1 bg-neutral-50 border border-neutral-100 px-2.5 py-1 rounded-full text-xs font-black text-neutral-800 shadow-2xs select-none ml-1">
                           <span className="text-[#C5A358] flex items-center"><Star size={11} fill="currentColor" strokeWidth={0} /></span>
