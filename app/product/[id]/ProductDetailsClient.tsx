@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ShieldCheck, RefreshCw, Leaf, Share2, Check, Heart } from 'lucide-react';
+import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ShieldCheck, RefreshCw, Leaf, Share2, Check, Heart, ChevronDown } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext'; 
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { AnimatePresence, motion } from 'framer-motion';
@@ -34,6 +34,9 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   const [isLiked, setIsLiked] = useState(false);
+  
+  // CHANGE: Added localized state toggle hook for short description accordion drawer
+  const [isShortDescOpen, setIsShortDescOpen] = useState(false);
 
   const [deliveryDates, setDeliveryDates] = useState({ start: '', end: '' });
   const descriptionContainerRef = useRef<HTMLDivElement>(null);
@@ -282,6 +285,11 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     });
   };
 
+  const getSanitizedDescription = (htmlContent: string) => {
+    if (!htmlContent) return "";
+    return htmlContent.replace(/src="http:\/\//g, 'src="https://');
+  };
+
   if (!mounted || !initialProduct) return null;
 
   return (
@@ -289,14 +297,22 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
       <div className="bg-white min-h-screen text-[#1a1a1a] antialiased">
         <main className="max-w-[1450px] mx-auto px-4 lg:px-12 pt-28 lg:pt-32 pb-20">
           
+          {/* MOBILE EXCLUSIVE TITLE BAR WITH RATING PERSISTENCE */}
           <div className="lg:hidden mb-6 space-y-2">
+             <p className="text-[9px] font-black uppercase tracking-[5px] text-gray-400 italic">Signature Archive • SKU: {initialProduct.sku || '00'}</p>
+             {averageRating > 0 && (
+                <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold text-neutral-800">
+                  <span className="bg-neutral-100 px-2 py-0.5 rounded text-[10px]">{averageRating.toFixed(1)} ★</span>
+                  <span className="text-neutral-400 font-normal">({totalRatingCount} verified reviews)</span>
+                </div>
+              )}
              <h1 className="text-2xl font-serif italic tracking-tighter leading-tight text-black">{initialProduct.name}</h1>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             <div className="col-span-1 lg:col-span-7 flex flex-col md:flex-row gap-6 lg:sticky lg:top-32">
               
-              {/* 1. DESKTOP ONLY: SIDE THUMBNAILS */}
+              {/* 1. SIDE THUMBNAILS */}
               <div className="hidden lg:flex flex-col gap-4 w-[100px] min-w-[100px] shrink-0 overflow-y-auto no-scrollbar max-h-[600px] pr-1">
                 {images.map((img: any, i: number) => (
                   <button 
@@ -311,7 +327,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 ))}
               </div>
 
-              {/* 2. DESKTOP ONLY: MAIN IMAGE BOX WITH HOVER ZOOM & CONTROLS */}
+              {/* 2. DESKTOP MAIN IMAGE BOX WITH HOVER ZOOM */}
               <div 
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => setZoomStyle({ display: 'none', backgroundPosition: '0% 0%' })}
@@ -331,7 +347,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                   </>
                 )}
                 
-                {/* Desktop Heart Icon Toggle Button */}
                 <button 
                   type="button" 
                   onClick={handleWishlistToggle}
@@ -346,10 +361,8 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 </button>
               </div>
 
-              {/* 3. MOBILE ONLY: TOUCH SWIPABLE CAROUSEL MATRIX */}
+              {/* 3. MOBILE SWIPABLE CAROUSEL MATRIX */}
               <div className="block lg:hidden w-full bg-[#fafafa] rounded-[24px] overflow-hidden border border-gray-100 relative shadow-sm">
-                
-                {/* Mobile Heart Icon Toggle Button */}
                 <button 
                   type="button" 
                   onClick={handleWishlistToggle}
@@ -415,16 +428,20 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
             </div>
 
+            {/* PRODUCT BUYING METADATA CONTROLS GRID */}
             <div className="col-span-1 lg:col-span-5 space-y-10">
               <header className="hidden lg:block space-y-3">
                 <p className="text-[10px] font-black uppercase tracking-[6px] text-gray-400 italic">Signature Archive • SKU: {initialProduct.sku || '00'}</p>
-                <h1 className="text-4xl lg:text-5xl font-serif italic tracking-tighter leading-tight">{initialProduct.name}</h1>
+                
+                {/* CHANGE: Moved the desktop rating system exactly ABOVE the main product title box layout */}
                 {averageRating > 0 && (
-                  <div className="flex items-center gap-1.5 pt-1 text-xs font-bold text-neutral-800">
+                  <div className="flex items-center gap-1.5 pt-0.5 text-xs font-bold text-neutral-800">
                     <span className="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">{averageRating.toFixed(1)} ★</span>
                     <span className="text-neutral-400 font-normal">Based on {totalRatingCount} verified ratings</span>
                   </div>
                 )}
+                
+                <h1 className="text-4xl lg:text-5xl font-serif italic tracking-tighter leading-tight pt-1">{initialProduct.name}</h1>
               </header>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-y border-neutral-100 py-6 gap-4">
@@ -453,10 +470,39 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </div>
               </div>
 
-              <div className="bg-[#fafafa] p-6 rounded-[32px] border border-gray-100 max-w-full">
-                 <div className="text-[13px] leading-relaxed text-gray-500 font-medium max-w-full break-words font-sans">
-                   <div dangerouslySetInnerHTML={{ __html: shortDescContent }} className="space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1.5" />
-                 </div>
+              {/* CHANGE: Upgraded the short description to a fully interactive collapsible luxury drawer wrapper block */}
+              <div className="bg-[#fafafa] rounded-[32px] border border-gray-100 overflow-hidden shadow-sm transition-all duration-300">
+                 <button 
+                   type="button"
+                   onClick={() => setIsShortDescOpen(!isShortDescOpen)}
+                   className="w-full p-6 flex items-center justify-between text-left select-none group focus:outline-none"
+                 >
+                   <span className="text-[10px] font-black uppercase tracking-[3px] text-neutral-800 italic flex items-center gap-2">
+                     ✨ Exclusive Drop Details
+                   </span>
+                   <motion.div
+                     animate={{ rotate: isShortDescOpen ? 180 : 0 }}
+                     transition={{ duration: 0.3, ease: "easeInOut" }}
+                     className="text-neutral-400 group-hover:text-black transition-colors"
+                   >
+                     <ChevronDown size={16} strokeWidth={2.5} />
+                   </motion.div>
+                 </button>
+
+                 <AnimatePresence initial={false}>
+                   {isShortDescOpen && (
+                     <motion.div
+                       initial={{ height: 0, opacity: 0 }}
+                       animate={{ height: "auto", opacity: 1 }}
+                       exit={{ height: 0, opacity: 0 }}
+                       transition={{ duration: 0.35, ease: "easeInOut" }}
+                     >
+                       <div className="px-6 pb-6 pt-1 text-[13px] leading-relaxed text-gray-500 font-medium max-w-full break-words font-sans border-t border-gray-50 bg-white/50">
+                         <div dangerouslySetInnerHTML={{ __html: shortDescContent }} className="space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1.5" />
+                       </div>
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
               </div>
 
               {colorAttr && (
@@ -617,6 +663,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
             </div>
           </div>
 
+          {/* LOWER ACCORDION INFORMATION TABS MESH */}
           <div className="mt-24 border-t border-gray-100 pt-16">
             <div className="lg:hidden flex items-center justify-between mb-3 px-1">
               <span className="text-[9px] font-black tracking-[4px] text-neutral-400 uppercase italic animate-pulse">
@@ -638,7 +685,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
             <div className="min-h-[300px]">
               {activeTab === 'description' && (
-                <div ref={descriptionContainerRef} className="text-xl leading-[2.4] text-gray-500 font-light prose prose-neutral max-w-none relative z-10 overflow-hidden [&_iframe]:max-w-full [&_video]:max-w-full [&_iframe]:aspect-video [&_video]:h-auto [&_iframe]:rounded-[24px] [&_video]:rounded-[24px] [&_iframe]:my-6 [&_video]:my-6" dangerouslySetInnerHTML={{ __html: initialProduct.description }} />
+                <div ref={descriptionContainerRef} className="text-xl leading-[2.4] text-gray-500 font-light prose prose-neutral max-w-none relative z-10 overflow-hidden [&_iframe]:max-w-full [&_video]:max-w-full [&_iframe]:aspect-video [&_video]:h-auto [&_iframe]:rounded-[24px] [&_video]:rounded-[24px] [&_iframe]:my-6 [&_video]:my-6 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-[24px] [&_img]:my-6" dangerouslySetInnerHTML={{ __html: getSanitizedDescription(initialProduct.description) }} />
               )}
               
               {activeTab === 'additional_info' && (
