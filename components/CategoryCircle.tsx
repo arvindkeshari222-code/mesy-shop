@@ -1,8 +1,28 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 export default function CategoryColorGrid() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState<Record<number, boolean>>({});
+
+  // Intersection Observer for Scroll Trigger (Mobile & Desktop)
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = Number(entry.target.getAttribute('data-id'));
+          setInView((prev) => ({ ...prev, [id]: true }));
+        }
+      });
+    }, { threshold: 0.2 });
+
+    const elements = containerRef.current?.querySelectorAll('.color-card');
+    elements?.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   const colors = [
     { name: "SUN KISSED BROWN", id: 202, desc: "A resort-ready shade that's ready for your next getaway.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/S0feb13d13e1241f0b1ff586489ad7610a.jpg_960x960q75.jpg_.avif", hex: "#825C4D", textColor: "text-white" },
     { name: "PARADISE PINK", id: 201, desc: "Bold, bright, and bound to make a statement.", img: "https://dev-mesy.pantheonsite.io/wp-content/uploads/2026/06/Sc0e763d9bd5945c18341af2c0ce283a5J.webp", hex: "#FF8DC5", textColor: "text-white" },
@@ -17,21 +37,29 @@ export default function CategoryColorGrid() {
         <h2 className="text-2xl font-bold tracking-tight uppercase text-black">Shop by Color</h2>
       </div>
       
-      {/* Grid spacing aur layout perfect Alo Yoga jaisa flex/gap set kiya hai */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 w-full">
+      <div ref={containerRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 w-full">
         {colors.map((c) => (
-          <Link href={`/category/${c.id}`} key={c.id} className="group block w-full flex flex-col text-left">
+          <Link 
+            href={`/category/${c.id}`} 
+            key={c.id} 
+            data-id={c.id}
+            className="color-card group/item block w-full flex flex-col text-left"
+          >
             
-            {/* Image Box */}
+            {/* Advanced Hybrid Image Engine */}
             <div className="w-full aspect-[3/4] overflow-hidden bg-neutral-100">
               <img 
                 src={c.img} 
                 alt={c.name} 
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 ease-in-out scale-100 group-hover:scale-105" 
+                className={`w-full h-full object-cover transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] scale-100 group-hover/item:scale-[1.02] ${
+                  inView[c.id] 
+                    ? 'grayscale-0 md:grayscale group-hover/item:grayscale-0' 
+                    : 'grayscale md:grayscale group-hover/item:grayscale-0'
+                }`} 
               />
             </div>
             
-            {/* Content Box - Image ke niche solid color, pure layout alignment mapping */}
+            {/* Content Box */}
             <div 
               className={`w-full p-4 md:p-5 flex flex-col justify-between flex-grow min-h-[140px] ${c.textColor}`}
               style={{ backgroundColor: c.hex }}

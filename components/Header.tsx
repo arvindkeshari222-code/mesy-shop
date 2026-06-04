@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, ShoppingBag, Menu, X, ChevronDown, User } from 'lucide-react';
+// CHANGE: Added 'Heart' to the lucide-react imports matrix
+import { Search, ShoppingBag, Menu, X, ChevronDown, User, Heart } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext';
 import CartDrawer from '@/components/CartDrawer';
 
@@ -55,12 +56,18 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center gap-6 text-black">
-            {/* SIGN IN LINK ADDED HERE */}
-            <Link href="https://dev-mesy.pantheonsite.io/my-account/" className="hidden md:flex text-[10px] font-black uppercase tracking-[2px] hover:text-gray-500 items-center gap-1.5">
+            {/* SIGN IN LINK - NOW FIXED TO SHOW ON MOBILE TOO */}
+            <Link href="https://dev-mesy.pantheonsite.io/my-account/" className="flex text-[10px] font-black uppercase tracking-[2px] hover:text-gray-500 items-center gap-1.5">
               <User size={16} /> SIGN IN
             </Link>
             
             <Search size={18} className="cursor-pointer" onClick={() => setIsSearchOpen(true)} />
+            
+            {/* CHANGE: Added Elegant Wishlist Heart Icon Link to Private Archive */}
+            <Link href="/wishlist" className="cursor-pointer hover:text-gray-500 transition-colors">
+              <Heart size={18} />
+            </Link>
+
             <div onClick={() => setIsCartOpen(true)} className="relative cursor-pointer">
               <ShoppingBag size={18} />
               {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-black text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">{cart.length}</span>}

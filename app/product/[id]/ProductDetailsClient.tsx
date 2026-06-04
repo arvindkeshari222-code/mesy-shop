@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ZoomIn, ShieldCheck, RefreshCw, Leaf, Share2, Check } from 'lucide-react';
+import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, Play, PenTool, ChevronLeft, ChevronRight, X, ShieldCheck, RefreshCw, Leaf, Share2, Check, Heart } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext'; 
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { AnimatePresence, motion } from 'framer-motion';
@@ -33,9 +33,12 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
+  const [isLiked, setIsLiked] = useState(false);
+
   const [deliveryDates, setDeliveryDates] = useState({ start: '', end: '' });
   const descriptionContainerRef = useRef<HTMLDivElement>(null);
   const reviewsTopRef = useRef<HTMLDivElement>(null); 
+  const mobileCarouselRef = useRef<HTMLDivElement>(null);
 
   const averageRating = parseFloat(initialProduct?.average_rating || "4.90");
   const totalRatingCount = reviewsList.length; 
@@ -49,7 +52,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
   const isOutOfStock = initialProduct?.stock_status === 'outofstock';
 
-  // Core Global Price Variables
   const currentPriceValue = displayPrice ? parseFloat(displayPrice) : 0;
   let regPriceValue = initialProduct?.regular_price ? parseFloat(initialProduct.regular_price) : 0;
 
@@ -57,14 +59,44 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     regPriceValue = currentPriceValue * 2.052; 
   }
 
-  // Real-time dynamic discount calculation matrix loop
   const calculatedDiscountPercent = regPriceValue > currentPriceValue 
     ? Math.round(((regPriceValue - currentPriceValue) / regPriceValue) * 100)
     : 0;
 
+  // Hydration Guard
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Isolated Wishlist Initialization Cycle
+  useEffect(() => {
+    if (initialProduct?.id) {
+      const savedWishlist = localStorage.getItem('mesy_wishlist');
+      if (savedWishlist) {
+        const wishlistIds = JSON.parse(savedWishlist);
+        if (wishlistIds.includes(initialProduct.id)) {
+          setIsLiked(true);
+        }
+      }
+    }
+  }, [initialProduct?.id]);
+
+  const handleWishlistToggle = () => {
+    if (!initialProduct?.id) return;
+    
+    const savedWishlist = localStorage.getItem('mesy_wishlist');
+    let wishlistIds = savedWishlist ? JSON.parse(savedWishlist) : [];
+
+    if (isLiked) {
+      wishlistIds = wishlistIds.filter((id: any) => id !== initialProduct.id);
+      setIsLiked(false);
+    } else {
+      wishlistIds.push(initialProduct.id);
+      setIsLiked(true);
+    }
+    
+    localStorage.setItem('mesy_wishlist', JSON.stringify(wishlistIds));
+  };
 
   useEffect(() => {
     const formatDate = (date: Date) => {
@@ -108,7 +140,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     }
   }, [activeTab]);
 
-  // WooCommerce Variation Sync Loop
   useEffect(() => {
     if (initialVariations?.length > 0) {
       const variant = initialVariations.find((v: any) => {
@@ -129,7 +160,15 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
         if (targetVariant.image?.src && selectedColor) {
           setActiveImage(targetVariant.image.src);
           const idx = images.findIndex((img: any) => img.src === targetVariant.image.src);
-          if (idx !== -1) setCurrentImgIndex(idx);
+          if (idx !== -1) {
+            setCurrentImgIndex(idx);
+            if (mobileCarouselRef.current) {
+              mobileCarouselRef.current.scrollTo({
+                left: mobileCarouselRef.current.offsetWidth * idx,
+                behavior: 'smooth'
+              });
+            }
+          }
         }
       }
     }
@@ -147,6 +186,12 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
       const newIdx = currentImgIndex === images.length - 1 ? 0 : currentImgIndex + 1;
       setCurrentImgIndex(newIdx);
       setActiveImage(images[newIdx]?.src || "");
+      if (mobileCarouselRef.current) {
+        mobileCarouselRef.current.scrollTo({
+          left: mobileCarouselRef.current.offsetWidth * newIdx,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
@@ -156,6 +201,12 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
       const newIdx = currentImgIndex === 0 ? images.length - 1 : currentImgIndex - 1;
       setCurrentImgIndex(newIdx);
       setActiveImage(images[newIdx]?.src || "");
+      if (mobileCarouselRef.current) {
+        mobileCarouselRef.current.scrollTo({
+          left: mobileCarouselRef.current.offsetWidth * newIdx,
+          behavior: 'smooth'
+        });
+      }
     }
   };
 
@@ -245,16 +296,22 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             <div className="col-span-1 lg:col-span-7 flex flex-col md:flex-row gap-6 lg:sticky lg:top-32">
               
-              {/* 1. DESKTOP ONLY: SIDE THUMBNAILS (UNTOUCHED SAFE ZONE) */}
-              <div className="hidden lg:flex flex-col gap-4 w-24 shrink-0 overflow-y-auto no-scrollbar max-h-[600px]">
+              {/* 1. DESKTOP ONLY: SIDE THUMBNAILS */}
+              <div className="hidden lg:flex flex-col gap-4 w-[100px] min-w-[100px] shrink-0 overflow-y-auto no-scrollbar max-h-[600px] pr-1">
                 {images.map((img: any, i: number) => (
-                  <button key={i} onMouseEnter={() => { setActiveImage(img.src); setCurrentImgIndex(i); }} className={`aspect-[3/4] w-full rounded-2xl overflow-hidden p-2 border-2 transition-all bg-[#fbfbfb] ${activeImage === img.src ? 'border-black scale-105' : 'border-transparent opacity-40'}`}>
-                    <img src={img.src} className="w-full h-full object-contain" alt="" />
+                  <button 
+                    key={i} 
+                    type="button"
+                    onClick={() => { setActiveImage(img.src); setCurrentImgIndex(i); }}
+                    onMouseEnter={() => { setActiveImage(img.src); setCurrentImgIndex(i); }} 
+                    className={`w-full h-[130px] min-h-[130px] shrink-0 rounded-2xl overflow-hidden border-2 transition-all bg-[#fbfbfb] relative ${activeImage === img.src ? 'border-black scale-105 shadow-sm' : 'border-neutral-200/60 opacity-50 hover:opacity-100'}`}
+                  >
+                    <img src={img.src} className="w-full h-full object-cover" alt="" />
                   </button>
                 ))}
               </div>
 
-              {/* 2. DESKTOP ONLY: MAIN IMAGE BOX WITH HOVER ZOOM (UNTOUCHED SAFE ZONE) */}
+              {/* 2. DESKTOP ONLY: MAIN IMAGE BOX WITH HOVER ZOOM & CONTROLS */}
               <div 
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => setZoomStyle({ display: 'none', backgroundPosition: '0% 0%' })}
@@ -266,17 +323,69 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                   <div className="text-gray-300 text-xs font-bold uppercase tracking-widest">No Image Loaded</div>
                 )}
                 <div className="absolute inset-0 z-10 pointer-events-none bg-no-repeat rounded-[40px]" style={zoomStyle as any} />
+                
+                {images.length > 1 && (
+                  <>
+                    <button onClick={prevImage} type="button" className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-black shadow-md z-30 transition-all opacity-90 active:scale-95"><ChevronLeft size={20} strokeWidth={2.5} /></button>
+                    <button onClick={nextImage} type="button" className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-black shadow-md z-30 transition-all opacity-90 active:scale-95"><ChevronRight size={20} strokeWidth={2.5} /></button>
+                  </>
+                )}
+                
+                {/* Desktop Heart Icon Toggle Button */}
+                <button 
+                  type="button" 
+                  onClick={handleWishlistToggle}
+                  className="absolute top-6 right-6 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-black shadow-md z-40 transition-all active:scale-95"
+                >
+                  <Heart 
+                    size={20} 
+                    fill={isLiked ? "#E14B4B" : "none"} 
+                    className={`transition-colors duration-300 ${isLiked ? 'text-[#E14B4B]' : 'text-black'}`} 
+                    strokeWidth={2}
+                  />
+                </button>
               </div>
 
-              {/* 3. MOBILE ONLY: SEPARATE BLOCK (NO MORE SIZING JUMPS, FULL SIZE MODE) */}
+              {/* 3. MOBILE ONLY: TOUCH SWIPABLE CAROUSEL MATRIX */}
               <div className="block lg:hidden w-full bg-[#fafafa] rounded-[24px] overflow-hidden border border-gray-100 relative shadow-sm">
-                <div className="w-full aspect-[3/4] relative">
-                  <img 
-                    src={activeImage} 
-                    className="w-full h-full object-cover select-none" 
-                    alt="Mobile Preview" 
-                    onClick={() => setIsZoomOpen(true)}
+                
+                {/* Mobile Heart Icon Toggle Button */}
+                <button 
+                  type="button" 
+                  onClick={handleWishlistToggle}
+                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-black shadow-md z-40 transition-all active:scale-95"
+                >
+                  <Heart 
+                    size={18} 
+                    fill={isLiked ? "#E14B4B" : "none"} 
+                    className={`transition-colors duration-300 ${isLiked ? 'text-[#E14B4B]' : 'text-black'}`} 
+                    strokeWidth={2}
                   />
+                </button>
+
+                <div 
+                  ref={mobileCarouselRef}
+                  className="w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
+                  onScroll={(e) => {
+                    const width = e.currentTarget.offsetWidth;
+                    const scrollLeft = e.currentTarget.scrollLeft;
+                    const newIndex = Math.round(scrollLeft / width);
+                    if (newIndex !== currentImgIndex && images[newIndex]) {
+                      setCurrentImgIndex(newIndex);
+                      setActiveImage(images[newIndex].src);
+                    }
+                  }}
+                >
+                  {images.map((img: any, idx: number) => (
+                    <div key={idx} className="w-full shrink-0 aspect-[3/4] snap-start relative">
+                      <img 
+                        src={img.src} 
+                        className="w-full h-full object-cover select-none" 
+                        alt={`Mobile Preview ${idx}`} 
+                        onClick={() => setIsZoomOpen(true)}
+                      />
+                    </div>
+                  ))}
                 </div>
                 
                 {images.length > 1 && (
@@ -285,7 +394,19 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                     <button onClick={nextImage} type="button" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-black shadow-md z-30 active:scale-95"><ChevronRight size={18} strokeWidth={2.5} /></button>
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-30 bg-black/10 px-2 py-1 rounded-full backdrop-blur-sm">
                       {images.map((_, idx: number) => (
-                        <button key={idx} type="button" onClick={(e) => { e.stopPropagation(); setCurrentImgIndex(idx); setActiveImage(images[idx]?.src || ""); }} className={`h-1.5 rounded-full transition-all ${idx === currentImgIndex ? 'w-3 bg-black' : 'w-1.5 bg-gray-400'}`} />
+                        <button 
+                          key={idx} 
+                          type="button" 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setCurrentImgIndex(idx); 
+                            setActiveImage(images[idx]?.src || ""); 
+                            if (mobileCarouselRef.current) {
+                              mobileCarouselRef.current.scrollTo({ left: mobileCarouselRef.current.offsetWidth * idx, behavior: 'smooth' });
+                            }
+                          }} 
+                          className={`h-1.5 rounded-full transition-all ${idx === currentImgIndex ? 'w-3 bg-black' : 'w-1.5 bg-gray-400'}`} 
+                        />
                       ))}
                     </div>
                   </>
@@ -338,7 +459,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </div>
               </div>
 
-              {/* 🎨 COLOR VARIATION CHIPS */}
               {colorAttr && (
                 <div className="space-y-4 border-b border-neutral-100 pb-6">
                   <div className="flex justify-between items-center">
@@ -383,7 +503,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 </div>
               )}
 
-              {/* 📏 SIZE CHIPS */}
               {sizeAttr && (
                 <div className="space-y-4 pb-2">
                   <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">
@@ -499,13 +618,22 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
           </div>
 
           <div className="mt-24 border-t border-gray-100 pt-16">
-            <div className="flex gap-8 md:gap-12 border-b border-gray-100 pb-6 mb-12 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory whitespace-nowrap">
-              <button type="button" onClick={() => setActiveTab('description')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Description</button>
-              <button type="button" onClick={() => setActiveTab('additional_info')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'additional_info' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Additional Information</button>
-              <button type="button" onClick={() => setActiveTab('video')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'video' ? 'border-black text-black' : 'border-transparent text-gray-300'} flex items-center gap-2`}><Play size={12} fill="currentColor"/> Product Film</button>
-              <button type="button" onClick={() => setActiveTab('reviews')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'reviews' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>
-                Reviews ({totalRatingCount})
-              </button>
+            <div className="lg:hidden flex items-center justify-between mb-3 px-1">
+              <span className="text-[9px] font-black tracking-[4px] text-neutral-400 uppercase italic animate-pulse">
+                Swipe tabs to explore →
+              </span>
+            </div>
+
+            <div className="relative w-full">
+              <div className="flex gap-8 md:gap-12 border-b border-gray-100 pb-6 mb-12 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory whitespace-nowrap pr-12">
+                <button type="button" onClick={() => setActiveTab('description')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'description' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Description</button>
+                <button type="button" onClick={() => setActiveTab('additional_info')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'additional_info' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>Additional Information</button>
+                <button type="button" onClick={() => setActiveTab('video')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'video' ? 'border-black text-black' : 'border-transparent text-gray-300'} flex items-center gap-2`}><Play size={12} fill="currentColor"/> Product Film</button>
+                <button type="button" onClick={() => setActiveTab('reviews')} className={`text-sm font-black uppercase tracking-[4px] pb-2 transition-all border-b-2 snap-start ${activeTab === 'reviews' ? 'border-black text-black' : 'border-transparent text-gray-300'}`}>
+                  Reviews ({totalRatingCount})
+                </button>
+              </div>
+              <div className="lg:hidden absolute right-0 top-0 h-[calc(100%-24px)] w-14 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-20" />
             </div>
 
             <div className="min-h-[300px]">
