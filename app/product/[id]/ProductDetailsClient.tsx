@@ -10,10 +10,15 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const { addToCart } = useCart();
 
   const [mounted, setMounted] = useState(false);
-  const [activeImage, setActiveImage] = useState(initialProduct?.images?.[0]?.src || "");
+  
+  // LIVE SYNC STATES: Initialized with props, updated dynamically via API
+  const [currentProduct, setCurrentProduct] = useState(initialProduct);
+  const [currentVariations, setCurrentVariations] = useState(initialVariations);
+
+  const [activeImage, setActiveImage] = useState(currentProduct?.images?.[0]?.src || "");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState(""); 
-  const [displayPrice, setDisplayPrice] = useState(initialProduct?.price || "0.00");
+  const [displayPrice, setDisplayPrice] = useState(currentProduct?.price || "0.00");
   const [qty, setQty] = useState(1);
   const [zoomStyle, setZoomStyle] = useState({ display: 'none', backgroundPosition: '0% 0%' });
   const [activeTab, setActiveTab] = useState('description');
@@ -34,8 +39,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
   const [isLiked, setIsLiked] = useState(false);
-  
-  // CHANGE: Added localized state toggle hook for short description accordion drawer
   const [isShortDescOpen, setIsShortDescOpen] = useState(false);
 
   const [deliveryDates, setDeliveryDates] = useState({ start: '', end: '' });
@@ -43,7 +46,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const reviewsTopRef = useRef<HTMLDivElement>(null); 
   const mobileCarouselRef = useRef<HTMLDivElement>(null);
 
-  const averageRating = parseFloat(initialProduct?.average_rating || "4.90");
+  const averageRating = parseFloat(currentProduct?.average_rating || "4.90");
   const totalRatingCount = reviewsList.length; 
   
   const reviewsPerPage = 20;
@@ -53,10 +56,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const indexOfFirstReview = indexOfLastReview - reviewsPerPage;
   const currentPagedReviews = reviewsList.slice(indexOfFirstReview, indexOfLastReview);
 
-  const isOutOfStock = initialProduct?.stock_status === 'outofstock';
+  const isOutOfStock = currentProduct?.stock_status === 'outofstock';
 
   const currentPriceValue = displayPrice ? parseFloat(displayPrice) : 0;
-  let regPriceValue = initialProduct?.regular_price ? parseFloat(initialProduct.regular_price) : 0;
+  let regPriceValue = currentProduct?.regular_price ? parseFloat(currentProduct.regular_price) : 0;
 
   if (regPriceValue === 0 || isNaN(regPriceValue) || regPriceValue <= currentPriceValue) {
     regPriceValue = currentPriceValue * 2.052; 
@@ -71,30 +74,63 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     setMounted(true);
   }, []);
 
+  // FIXED EFFECT 1: Real-time WooCommerce Auto-Sync (Dependencies fixed to stop infinite triggers)
+  useEffect(() => {
+    if (!productId) return;
+
+    async function syncLiveWooCommerceData() {
+      try {
+        const response = await fetch(`/api/products/${productId}/live?t=${Date.now()}`, {
+          cache: 'no-store'
+        });
+        if (response.ok) {
+          const liveData = await response.json();
+          
+          if (liveData) {
+            setCurrentProduct((prev: any) => ({
+              ...prev,
+              price: liveData.price || prev.price,
+              regular_price: liveData.regular_price || prev.regular_price,
+              stock_status: liveData.stock_status || prev.stock_status,
+            }));
+
+            if (liveData.variations) {
+              setCurrentVariations(liveData.variations);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("WooCommerce live sync failed:", error);
+      }
+    }
+
+    syncLiveWooCommerceData();
+  }, [productId]); // Only trigger when the actual product id changes
+
   // Isolated Wishlist Initialization Cycle
   useEffect(() => {
-    if (initialProduct?.id) {
+    if (currentProduct?.id) {
       const savedWishlist = localStorage.getItem('mesy_wishlist');
       if (savedWishlist) {
         const wishlistIds = JSON.parse(savedWishlist);
-        if (wishlistIds.includes(initialProduct.id)) {
+        if (wishlistIds.includes(currentProduct.id)) {
           setIsLiked(true);
         }
       }
     }
-  }, [initialProduct?.id]);
+  }, [currentProduct?.id]);
 
   const handleWishlistToggle = () => {
-    if (!initialProduct?.id) return;
+    if (!currentProduct?.id) return;
     
     const savedWishlist = localStorage.getItem('mesy_wishlist');
     let wishlistIds = savedWishlist ? JSON.parse(savedWishlist) : [];
 
     if (isLiked) {
-      wishlistIds = wishlistIds.filter((id: any) => id !== initialProduct.id);
+      wishlistIds = wishlistIds.filter((id: any) => id !== currentProduct.id);
       setIsLiked(false);
     } else {
-      wishlistIds.push(initialProduct.id);
+      wishlistIds.push(currentProduct.id);
       setIsLiked(true);
     }
     
@@ -113,8 +149,8 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     setDeliveryDates({ start: formatDate(startDate), end: formatDate(endDate) });
   }, []);
 
-  const images = initialProduct?.images || [];
-  const videoUrl = initialProduct?.meta_data?.find((m: any) => m.key === '_product_video_url')?.value || "";
+  const images = currentProduct?.images || [];
+  const videoUrl = currentProduct?.meta_data?.find((m: any) => m.key === '_product_video_url')?.value || "";
   
   const getYouTubeId = (url: string) => {
     if (!url) return null;
@@ -124,15 +160,20 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   };
   const youtubeId = getYouTubeId(videoUrl) || "dQw4w9WgXcQ";
 
-  const shortDescContent = initialProduct?.short_description || initialProduct?.excerpt || "Premium tailored architecture designed with unmatched precision.";
+  const shortDescContent = currentProduct?.short_description || currentProduct?.excerpt || "Premium tailored architecture designed with unmatched precision.";
   
-  const colorAttr = initialProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
-  const sizeAttr = initialProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('size'));
+  const colorAttr = currentProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
+  const sizeAttr = currentProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('size'));
 
+  // FIXED EFFECT 2: Fallback values only set if no option has been selected yet by user
   useEffect(() => { 
-    if (colorAttr && colorAttr.options) setSelectedColor(colorAttr.options[0]);
-    if (sizeAttr && sizeAttr.options) setSelectedSize(sizeAttr.options[0]);
-  }, [initialProduct, colorAttr, sizeAttr]);
+    if (colorAttr && colorAttr.options && !selectedColor) {
+      setSelectedColor(colorAttr.options[0]);
+    }
+    if (sizeAttr && sizeAttr.options && !selectedSize) {
+      setSelectedSize(sizeAttr.options[0]);
+    }
+  }, [currentProduct, colorAttr, sizeAttr, selectedColor, selectedSize]);
 
   useEffect(() => {
     if (activeTab !== 'description' && descriptionContainerRef.current) {
@@ -144,14 +185,14 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   }, [activeTab]);
 
   useEffect(() => {
-    if (initialVariations?.length > 0) {
-      const variant = initialVariations.find((v: any) => {
+    if (currentVariations?.length > 0) {
+      const variant = currentVariations.find((v: any) => {
         const matchColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
         const matchSize = sizeAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase()) : true;
         return matchColor && matchSize;
       });
 
-      const fallbackVariant = variant || initialVariations.find((v: any) => {
+      const fallbackVariant = variant || currentVariations.find((v: any) => {
         return (colorAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase())) || 
                (sizeAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase()));
       });
@@ -174,8 +215,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
           }
         }
       }
+    } else if (currentProduct?.price) {
+      setDisplayPrice(currentProduct.price);
     }
-  }, [selectedColor, selectedSize, initialVariations, images, colorAttr, sizeAttr]);
+  }, [selectedColor, selectedSize, currentVariations, currentProduct, images, colorAttr, sizeAttr]);
 
   const handlePageChange = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return;
@@ -214,16 +257,16 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   };
 
   const handleReserveInBag = () => {
-    if (!initialProduct || isOutOfStock) return;
+    if (!currentProduct || isOutOfStock) return;
     setIsAdding(true);
     setTimeout(() => {
       addToCart({
-        id: initialProduct.id,
-        name: initialProduct.name,
-        price: displayPrice || initialProduct.price || "0.00",
+        id: currentProduct.id,
+        name: currentProduct.name,
+        price: displayPrice || currentProduct.price || "0.00",
         quantity: Number(qty),
         selectedColor: selectedColor || undefined,
-        image: activeImage || (initialProduct.images?.[0]?.src || ""),
+        image: activeImage || (currentProduct.images?.[0]?.src || ""),
         options: {
           ...(selectedColor && { Color: selectedColor }),
           ...(selectedSize && { Size: selectedSize })
@@ -242,7 +285,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
     try {
       const formData = new FormData();
-      formData.append('product_id', initialProduct.id);
+      formData.append('product_id', currentProduct.id);
       formData.append('review', reviewText);
       formData.append('reviewer', reviewerName);
       formData.append('reviewer_email', reviewerEmail);
@@ -290,7 +333,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     return htmlContent.replace(/src="http:\/\//g, 'src="https://');
   };
 
-  if (!mounted || !initialProduct) return null;
+  if (!mounted || !currentProduct) return null;
 
   return (
     <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
@@ -299,14 +342,14 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
           
           {/* MOBILE EXCLUSIVE TITLE BAR WITH RATING PERSISTENCE */}
           <div className="lg:hidden mb-6 space-y-2">
-             <p className="text-[9px] font-black uppercase tracking-[5px] text-gray-400 italic">Signature Archive • SKU: {initialProduct.sku || '00'}</p>
+             <p className="text-[9px] font-black uppercase tracking-[5px] text-gray-400 italic">Signature Archive • SKU: {currentProduct.sku || '00'}</p>
              {averageRating > 0 && (
                 <div className="flex items-center gap-1.5 pb-1 text-[11px] font-bold text-neutral-800">
                   <span className="bg-neutral-100 px-2 py-0.5 rounded text-[10px]">{averageRating.toFixed(1)} ★</span>
                   <span className="text-neutral-400 font-normal">({totalRatingCount} verified reviews)</span>
                 </div>
               )}
-             <h1 className="text-2xl font-serif italic tracking-tighter leading-tight text-black">{initialProduct.name}</h1>
+             <h1 className="text-2xl font-serif italic tracking-tighter leading-tight text-black">{currentProduct.name}</h1>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
@@ -431,9 +474,8 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
             {/* PRODUCT BUYING METADATA CONTROLS GRID */}
             <div className="col-span-1 lg:col-span-5 space-y-10">
               <header className="hidden lg:block space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[6px] text-gray-400 italic">Signature Archive • SKU: {initialProduct.sku || '00'}</p>
+                <p className="text-[10px] font-black uppercase tracking-[6px] text-gray-400 italic">Signature Archive • SKU: {currentProduct.sku || '00'}</p>
                 
-                {/* CHANGE: Moved the desktop rating system exactly ABOVE the main product title box layout */}
                 {averageRating > 0 && (
                   <div className="flex items-center gap-1.5 pt-0.5 text-xs font-bold text-neutral-800">
                     <span className="bg-neutral-100 px-2 py-0.5 rounded text-[11px]">{averageRating.toFixed(1)} ★</span>
@@ -441,7 +483,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                   </div>
                 )}
                 
-                <h1 className="text-4xl lg:text-5xl font-serif italic tracking-tighter leading-tight pt-1">{initialProduct.name}</h1>
+                <h1 className="text-4xl lg:text-5xl font-serif italic tracking-tighter leading-tight pt-1">{currentProduct.name}</h1>
               </header>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-y border-neutral-100 py-6 gap-4">
@@ -460,7 +502,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </div>
                  
                  <div className="flex items-center gap-4">
-                    <button onClick={() => { if (navigator.share) { navigator.share({ title: initialProduct.name, text: `Check out this premium asset on MESY Atelier`, url: window.location.href }).catch(console.error); } else { navigator.clipboard.writeText(window.location.href); alert("Product link elegantly copied!"); } }} type="button" className="p-3 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/60 rounded-full text-neutral-700 transition-all active:scale-95 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm"><Share2 size={13} /> Share</button>
+                    <button onClick={() => { if (navigator.share) { navigator.share({ title: currentProduct.name, text: `Check out this premium asset on MESY Atelier`, url: window.location.href }).catch(console.error); } else { navigator.clipboard.writeText(window.location.href); alert("Product link elegantly copied!"); } }} type="button" className="p-3 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/60 rounded-full text-neutral-700 transition-all active:scale-95 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest shadow-sm"><Share2 size={13} /> Share</button>
                     
                     {isOutOfStock ? (
                       <span className="bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-[3px] px-4 py-2 rounded-full border border-red-100">Out Of Stock</span>
@@ -470,7 +512,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </div>
               </div>
 
-              {/* CHANGE: Upgraded the short description to a fully interactive collapsible luxury drawer wrapper block */}
               <div className="bg-[#fafafa] rounded-[32px] border border-gray-100 overflow-hidden shadow-sm transition-all duration-300">
                  <button 
                    type="button"
@@ -514,10 +555,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                   </div>
                   <div className="flex flex-wrap gap-3.5 pt-1">
                     {colorAttr.options.map((opt: string) => {
-                      const variantMatch = initialVariations?.find((v: any) => 
+                      const variantMatch = currentVariations?.find((v: any) => 
                         v.attributes.some((attr: any) => attr.option?.toLowerCase() === opt?.toLowerCase())
                       );
-                      const thumbImg = variantMatch?.image?.src || initialProduct?.images?.[0]?.src;
+                      const thumbImg = variantMatch?.image?.src || currentProduct?.images?.[0]?.src;
                       const isSelected = selectedColor?.toLowerCase() === opt?.toLowerCase();
 
                       return (
@@ -558,15 +599,15 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                     {sizeAttr.options.map((sz: string) => {
                       const isSelected = selectedSize?.toLowerCase() === sz?.toLowerCase();
                       
-                      const matchingSizeVariant = initialVariations?.find((v: any) => {
+                      const matchingSizeVariant = currentVariations?.find((v: any) => {
                         const hasSize = v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase());
                         const hasColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
                         return hasSize && hasColor;
-                      }) || initialVariations?.find((v: any) => v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase()));
+                      }) || currentVariations?.find((v: any) => v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase()));
 
                       const sizePriceStr = matchingSizeVariant?.price 
                         ? `$${parseFloat(matchingSizeVariant.price).toFixed(2)}` 
-                        : `$${parseFloat(initialProduct?.price || "0.00").toFixed(2)}`;
+                        : `$${parseFloat(currentProduct?.price || "0.00").toFixed(2)}`;
 
                       return (
                         <button
@@ -615,7 +656,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
                  {!isOutOfStock && (
                    <div className="space-y-2 pt-2 z-10 relative">
-                     <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }} createOrder={(data, actions) => actions.order.create({ intent: "CAPTURE", purchase_units: [{ description: initialProduct.name, amount: { currency_code: "USD", value: (currentPriceValue * qty).toFixed(2) } }] })} onApprove={async (data, actions) => { const details = await actions.order?.capture(); alert(`Transaction completed safely by ${details?.payer?.name?.given_name}`); }} />
+                     <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }} createOrder={(data, actions) => actions.order.create({ intent: "CAPTURE", purchase_units: [{ description: currentProduct.name, amount: { currency_code: "USD", value: (currentPriceValue * qty).toFixed(2) } }] })} onApprove={async (data, actions) => { const details = await actions.order?.capture(); alert(`Transaction completed safely by ${details?.payer?.name?.given_name}`); }} />
                    </div>
                  )}
 
@@ -666,7 +707,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
           {/* LOWER ACCORDION INFORMATION TABS MESH */}
           <div className="mt-24 border-t border-gray-100 pt-16">
             <div className="lg:hidden flex items-center justify-between mb-3 px-1">
-              <span className="text-[9px] font-black tracking-[4px] text-neutral-400 uppercase italic animate-pulse">
+              <span className="text-[9px] font-black tracking-[4px] text-neutral-400 uppercase italic">
                 Swipe tabs to explore →
               </span>
             </div>
@@ -685,12 +726,12 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
             <div className="min-h-[300px]">
               {activeTab === 'description' && (
-                <div ref={descriptionContainerRef} className="text-xl leading-[2.4] text-gray-500 font-light prose prose-neutral max-w-none relative z-10 overflow-hidden [&_iframe]:max-w-full [&_video]:max-w-full [&_iframe]:aspect-video [&_video]:h-auto [&_iframe]:rounded-[24px] [&_video]:rounded-[24px] [&_iframe]:my-6 [&_video]:my-6 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-[24px] [&_img]:my-6" dangerouslySetInnerHTML={{ __html: getSanitizedDescription(initialProduct.description) }} />
+                <div ref={descriptionContainerRef} className="text-xl leading-[2.4] text-gray-500 font-light prose prose-neutral max-w-none relative z-10 overflow-hidden [&_iframe]:max-w-full [&_video]:max-w-full [&_iframe]:aspect-video [&_video]:h-auto [&_iframe]:rounded-[24px] [&_video]:rounded-[24px] [&_iframe]:my-6 [&_video]:my-6 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-[24px] [&_img]:my-6" dangerouslySetInnerHTML={{ __html: getSanitizedDescription(currentProduct.description) }} />
               )}
               
               {activeTab === 'additional_info' && (
                 <div className="space-y-4">
-                  {initialProduct.attributes?.map((attr: any, idx: number) => (
+                  {currentProduct.attributes?.map((attr: any, idx: number) => (
                     <div key={`attr-${attr.name}-${idx}`} className="flex justify-between border-b pb-4">
                       <span className="text-[11px] font-black uppercase text-gray-400">{attr.name}</span>
                       <span className="text-sm font-bold uppercase">{attr.options.join(' • ')}</span>
