@@ -74,7 +74,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     setMounted(true);
   }, []);
 
-  // FIXED EFFECT 1: Real-time WooCommerce Auto-Sync (Dependencies fixed to stop infinite triggers)
+  // FIXED EFFECT 1: Real-time WooCommerce Auto-Sync
   useEffect(() => {
     if (!productId) return;
 
@@ -105,7 +105,7 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
     }
 
     syncLiveWooCommerceData();
-  }, [productId]); // Only trigger when the actual product id changes
+  }, [productId]);
 
   // Isolated Wishlist Initialization Cycle
   useEffect(() => {
@@ -491,13 +491,22 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                    <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 italic">
                      ✨ Exclusive Atelier Limited Run Offer
                    </p>
-                   <div className="flex items-baseline gap-3.5 flex-wrap">
+                   <div className="flex items-center gap-3.5 flex-wrap">
                      <span className="text-4xl font-light tracking-tighter italic text-black underline underline-offset-8 decoration-gray-100">
                        ${currentPriceValue.toFixed(2)}
                      </span>
                      <span className="text-xl font-light text-gray-400 line-through tracking-tighter decoration-[#E14B4B]">
                        ${regPriceValue.toFixed(2)}
                      </span>
+                     
+                     {/* 🌟 PREMIUM CONVERSION PILL BADGE JODHA HAI HAPAAR */}
+                     {averageRating > 0 && (
+                        <div className="flex items-center gap-1 bg-neutral-50 border border-neutral-100 px-2.5 py-1 rounded-full text-xs font-black text-neutral-800 shadow-2xs select-none ml-1">
+                          <span className="text-[#C5A358] flex items-center"><Star size={11} fill="currentColor" strokeWidth={0} /></span>
+                          <span>{averageRating.toFixed(1)}</span>
+                          <span className="text-neutral-400 font-normal text-[11px]">({totalRatingCount} reviews)</span>
+                        </div>
+                     )}
                    </div>
                  </div>
                  
