@@ -27,7 +27,7 @@ const ProductCard = ({ product }: { product: any }) => (
     
     <div className="space-y-1.5 px-1">
       <h2 className="text-[12px] uppercase tracking-[0.2em] font-medium text-neutral-900 group-hover:text-neutral-600 transition-colors">
-        {product.name}
+        {product.name.replace('&amp;', '&')}
       </h2>
       <div className="flex justify-between items-center">
         <p className="text-[11px] text-neutral-500 font-serif italic">${parseFloat(product.price || 0).toFixed(2)}</p>
@@ -84,7 +84,11 @@ export default function CategoryPage() {
         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
         className="mb-24 text-center"
       >
-        <h1 className="text-6xl md:text-9xl font-serif font-thin italic text-neutral-900 mb-6">{categoryData?.name}</h1>
+        {/* FIX: Yahan .replace('&amp;', '&') add kiya hai */}
+        <h1 className="text-6xl md:text-9xl font-serif font-thin italic text-neutral-900 mb-6">
+            {categoryData?.name?.replace('&amp;', '&')}
+        </h1>
+        
         <div className="flex flex-wrap justify-center gap-6 text-[9px] uppercase tracking-[0.3em] text-neutral-400">
            {[{id:'all', label:'All Items'}, {id:'available', label:'Available Now'}, {id:'low-high', label:'Price: Low-High'}, {id:'high-low', label:'Price: High-Low'}].map(f => (
              <button key={f.id} onClick={() => setActiveFilter(f.id)} className={`transition-all ${activeFilter === f.id ? 'text-black font-bold underline underline-offset-8' : 'hover:text-black'}`}>
