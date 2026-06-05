@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Reveal } from '@/components/Reveal';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const api = new (WooCommerceRestApi as any)({
+const api= new (WooCommerceRestApi as any)({
   url: "https://dev-mesy.pantheonsite.io",
   consumerKey: process.env.NEXT_PUBLIC_WC_CONSUMER_KEY, 
   consumerSecret: process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET, 
@@ -32,7 +32,7 @@ const ProductCardGridItem = ({ product, idx }: { product: any; idx: number }) =>
       <Link href={`/product/${product.id}`} className="absolute inset-0 z-40 cursor-pointer w-full h-full" />
       <Reveal delay={0.02 * idx}>
         <div className="space-y-3.5 w-full">
-          {/* PREMIUM IMAGE BOX */}
+          {/* PREMIUM IMAGE bOX */}
           <div className="relative aspect-[3/4] bg-[#fcfcfc] overflow-hidden w-full transition-all duration-500 group-hover:shadow-[0_8px_30px_rgb(0,0,0,0.03)] rounded-xs">
             {product.images?.[0]?.src ? (
               <img 
