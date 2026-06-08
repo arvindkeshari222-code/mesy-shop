@@ -56,9 +56,10 @@ const Footer = () => {
         <div className="space-y-4">
           <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">Support</h4>
           <div className="flex flex-col gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px]">
+            {/* 🎯 NAYA FAQ LINK ADDED HERE */}
+            <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
             <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping Info</Link>
             <Link href="/refund-policy" className="hover:text-white transition-colors">Returns & Refunds</Link>
-            {/* 🎯 CONTACT US LINK DIRECTLY CONNECTED TO YOUR /app/contact-us/page.js */}
             <Link href="/contact-us" className="hover:text-white transition-colors text-white">Contact Us</Link>
           </div>
         </div>
