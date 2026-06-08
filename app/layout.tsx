@@ -57,10 +57,7 @@ export default function RootLayout({
         </Script>
 
         {/* 🤖 TIDIO LIVE CHATBOT INJECTOR */}
-        <Script 
-          src="https://code.tidio.co/r5dmhpvlq2t48raksia7vgl6tf2urv1.js" 
-          strategy="afterInteractive" 
-        />
+        <script src="//code.tidio.co/r5dmhpv1q2t48raksia7vgl6tlf2urv1.js" async></script>
 
         <CartProvider>
           <Header />
