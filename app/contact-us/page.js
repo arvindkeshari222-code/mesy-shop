@@ -72,7 +72,7 @@ export default function ContactUs() {
               <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-2">
                 Digital Concierge Email
               </h3>
-              <p className="text-base font-light text-zinc-800">support@mesy.shop</p>
+              <p className="text-base font-light text-zinc-800">mesyshop1@gmail.com</p>
               <p className="text-xs text-zinc-400 font-light mt-1">
                 We respond within 12 to 24 hours.
               </p>

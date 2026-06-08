@@ -77,7 +77,7 @@ const Footer = () => {
           <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">MESY STUDIO NY</h4>
           <div className="text-[10px] font-medium text-neutral-500 uppercase tracking-[1.5px] space-y-2 leading-relaxed">
             <p>HQ: 350 5th Ave, Manhattan, New York, NY 10118</p>
-            <p>Digital Concierge: <span className="text-neutral-300">support@mesy.shop</span></p>
+            <p>Digital Concierge: <span className="text-neutral-300">mesyshop1@gmail.com</span></p>
           </div>
         </div>
 
