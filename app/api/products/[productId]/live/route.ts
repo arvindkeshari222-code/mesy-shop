@@ -56,7 +56,8 @@ export async function GET(
       price: productData.price,
       regular_price: productData.regular_price,
       stock_status: productData.stock_status,
-      variations: variations
+      variations: variations,
+      meta_data: productData.meta_data // <--- YE LINE ADD KARO
     });
 
   } catch (error) {

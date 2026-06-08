@@ -56,6 +56,12 @@ export default function RootLayout({
           `}
         </Script>
 
+        {/* 🤖 TIDIO LIVE CHATBOT INJECTOR */}
+        <Script 
+          src="https://code.tidio.co/r5dmhpvlq2t48raksia7vgl6tf2urv1.js" 
+          strategy="afterInteractive" 
+        />
+
         <CartProvider>
           <Header />
           <main className="pt-20"> {/* Header fixed hai toh padding zaruri hai */}
