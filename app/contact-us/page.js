@@ -2,12 +2,48 @@
 import React, { useState } from 'react';
 
 export default function ContactUs() {
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState({ success: null, message: "" });
 
-  const handleSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    // Yahan aapka form handle ho gaya bina page crash ya error ke
-    setSubmitted(true);
+    setIsSubmitting(true);
+    setSubmitResult({ success: null, message: "" });
+
+    const formData = new FormData(e.target);
+    
+    // 🎯 REAL WEB3FORMS KEY AUTOMATICALLY INTEGRATED HERE
+    formData.append("access_key", "4c4b3156-24e5-4bcb-9231-c949f638bc8b");
+    formData.append("subject", "New Customer Message from MESY Shop");
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSubmitResult({ 
+          success: true, 
+          message: "Thank you! Your message has been sent successfully to our concierge team." 
+        });
+        e.target.reset(); // Message send hone ke baad form khali karne ke liye
+      } else {
+        setSubmitResult({ 
+          success: false, 
+          message: data.message || "Something went wrong. Please try again." 
+        });
+      }
+    } catch (error) {
+      setSubmitResult({ 
+        success: false, 
+        message: "Network error. Please check your internet connection and try again." 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -23,29 +59,27 @@ export default function ContactUs() {
             We are here to help.
           </h1>
           <p className="text-zinc-500 font-light leading-relaxed text-sm md:text-base">
-            Have questions about our LED Drawing Pads or need assistance with an international order? Our concierge team is at your service.
+            Have questions about our luxury collections or need assistance with an international order? Fill out the secure form below.
           </p>
         </div>
 
         {/* Main Grid */}
         <div className="grid md:grid-cols-12 gap-12 md:gap-20 items-start">
           
-          {/* Left Side: Minimal Contact Info */}
+          {/* Left Side: Luxury Contact Info */}
           <div className="md:col-span-5 space-y-10 border-b md:border-b-0 pb-10 md:pb-0 border-zinc-100">
             <div>
-              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-3">
-                Digital Concierge
+              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-2">
+                Digital Concierge Email
               </h3>
-              <p className="text-base font-light text-zinc-800">
-                support@mesy.shop
-              </p>
+              <p className="text-base font-light text-zinc-800">support@mesy.shop</p>
               <p className="text-xs text-zinc-400 font-light mt-1">
                 We respond within 12 to 24 hours.
               </p>
             </div>
 
             <div>
-              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-3">
+              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-2">
                 HQ Address
               </h3>
               <p className="text-base font-light text-zinc-800 leading-relaxed">
@@ -56,7 +90,7 @@ export default function ContactUs() {
             </div>
 
             <div>
-              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-3">
+              <h3 className="text-xs uppercase tracking-[0.15em] text-zinc-400 font-medium mb-2">
                 Operating Hours
               </h3>
               <p className="text-base font-light text-zinc-800">
@@ -68,60 +102,69 @@ export default function ContactUs() {
             </div>
           </div>
 
-          {/* Right Side: Modern Minimalist Form */}
-          <div className="md:col-span-7">
-            {submitted ? (
-              <div className="bg-zinc-50 border border-zinc-100 p-8 text-center animate-fade-in">
-                <h3 className="text-lg font-light tracking-wide text-zinc-900 mb-2">Thank you for reaching out.</h3>
-                <p className="text-sm text-zinc-500 font-light">Our concierge team has received your message and will contact you shortly.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs uppercase tracking-wider text-zinc-500 font-light mb-2">
-                      Full Name
-                    </label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. John Doe"
-                      className="w-full bg-zinc-50 border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs uppercase tracking-wider text-zinc-500 font-light mb-2">
-                      Email Address
-                    </label>
-                    <input 
-                      type="email" 
-                      required
-                      placeholder="e.g. john@example.com"
-                      className="w-full bg-zinc-50 border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors"
-                    />
-                  </div>
-                </div>
-
+          {/* Right Side: Real Functional Form */}
+          <div className="md:col-span-7 bg-zinc-50 border border-zinc-100 p-8 md:p-10">
+            <h3 className="text-lg font-light tracking-wide text-zinc-900 mb-6">
+              Send a Secure Message
+            </h3>
+            
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs uppercase tracking-wider text-zinc-500 font-light mb-2">
-                    Message
+                    Full Name
                   </label>
-                  <textarea 
-                    rows="5" 
+                  <input 
+                    type="text" 
+                    name="name"
                     required
-                    placeholder="How can we assist you today?"
-                    className="w-full bg-zinc-50 border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors resize-none"
-                  ></textarea>
+                    placeholder="e.g. John Doe"
+                    className="w-full bg-white border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors"
+                  />
                 </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-zinc-500 font-light mb-2">
+                    Email Address
+                  </label>
+                  <input 
+                    type="email" 
+                    name="email"
+                    required
+                    placeholder="e.g. john@example.com"
+                    className="w-full bg-white border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors"
+                  />
+                </div>
+              </div>
 
-                <button 
-                  type="submit"
-                  className="w-full sm:w-auto bg-zinc-900 text-white text-xs uppercase tracking-[0.2em] font-medium px-8 py-4 hover:bg-zinc-800 transition-colors rounded-none"
-                >
-                  Send Message
-                </button>
-              </form>
-            )}
+              <div>
+                <label className="block text-xs uppercase tracking-wider text-zinc-500 font-light mb-2">
+                  Message
+                </label>
+                <textarea 
+                  rows="5" 
+                  name="message"
+                  required
+                  placeholder="How can our atelier assist you today?"
+                  className="w-full bg-white border border-zinc-200 text-sm font-light px-4 py-3 rounded-none focus:outline-none focus:border-zinc-900 transition-colors resize-none"
+                ></textarea>
+              </div>
+
+              {/* Status Notifications */}
+              {submitResult.success === true && (
+                <p className="text-xs text-green-600 font-medium bg-green-50 border border-green-100 p-3">{submitResult.message}</p>
+              )}
+              {submitResult.success === false && (
+                <p className="text-xs text-red-500 font-medium bg-red-50 border border-red-100 p-3">{submitResult.message}</p>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto bg-zinc-900 text-white text-xs uppercase tracking-[0.2em] font-medium px-8 py-4 hover:bg-zinc-800 transition-colors rounded-none disabled:bg-zinc-400"
+              >
+                {isSubmitting ? "Sending..." : "Submit Form"}
+              </button>
+            </form>
           </div>
 
         </div>
