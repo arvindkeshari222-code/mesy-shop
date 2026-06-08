@@ -13,6 +13,7 @@ const Footer = () => {
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Subscribing:", email);
+    setEmail(""); // Email clear karne ke liye after submit
   };
 
   return (
@@ -50,14 +51,19 @@ const Footer = () => {
 
       {/* LINKS MATRIX */}
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 py-16 grid grid-cols-2 md:grid-cols-4 gap-12 text-left">
+        
+        {/* COLUMN 1: SUPPORT */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">Support</h4>
           <div className="flex flex-col gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px]">
             <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping Info</Link>
             <Link href="/refund-policy" className="hover:text-white transition-colors">Returns & Refunds</Link>
+            {/* 🎯 CONTACT US LINK DIRECTLY CONNECTED TO YOUR /app/contact-us/page.js */}
+            <Link href="/contact-us" className="hover:text-white transition-colors text-white">Contact Us</Link>
           </div>
         </div>
 
+        {/* COLUMN 2: LEGAL */}
         <div className="space-y-4">
           <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">Legal</h4>
           <div className="flex flex-col gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-[1.5px]">
@@ -65,6 +71,16 @@ const Footer = () => {
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
           </div>
         </div>
+
+        {/* COLUMN 3: HQ / BRAND INFO */}
+        <div className="space-y-4 md:col-span-2">
+          <h4 className="text-[10px] font-black tracking-[3px] uppercase text-white">MESY STUDIO NY</h4>
+          <div className="text-[10px] font-medium text-neutral-500 uppercase tracking-[1.5px] space-y-2 leading-relaxed">
+            <p>HQ: 350 5th Ave, Manhattan, New York, NY 10118</p>
+            <p>Digital Concierge: <span className="text-neutral-300">support@mesy.shop</span></p>
+          </div>
+        </div>
+
       </div>
 
       {/* COPYRIGHT BAR */}
