@@ -5,9 +5,11 @@ import { Star, Minus, Plus, CheckCircle2, Truck, Loader2, PenTool, ChevronLeft, 
 import { useCart } from '@/app/context/CartContext'; 
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export default function ProductDetailsClient({ initialProduct, initialVariations, initialRelated, initialReviews = [], productId }: any) {
   const { addToCart } = useCart();
+  const router = useRouter();
 
   const [mounted, setMounted] = useState(false);
   
@@ -16,7 +18,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
   const [activeImage, setActiveImage] = useState(currentProduct?.images?.[0]?.src || "");
   
-  // 👑 DYNAMIC ATTRIBUTES STATE: Ab saare variations is single object me save honge
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({});
   
   const [displayPrice, setDisplayPrice] = useState(currentProduct?.price || "0.00");
@@ -131,14 +132,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const images = currentProduct?.images || [];
   const shortDescContent = currentProduct?.short_description || currentProduct?.excerpt || "Premium tailored architecture designed with unmatched precision.";
 
-  // 👑 AUTOMATIC ATTRIBUTES PARSER: WooCommerce ke saare attributes nikalega line se
   const allAttributes = currentProduct?.attributes || [];
   const colorAttr = allAttributes.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
-  
-  // Non-color attributes yaani saare options (Size, Cup Size, Band Size, Extra Attributes sab isme aayenge)
   const nonColorAttributes = allAttributes.filter((a: any) => !a.name.toLowerCase().includes('color') && !a.name.toLowerCase().includes('colour'));
 
-  // Default values set karne ke liye logic
   useEffect(() => { 
     if (allAttributes.length > 0 && Object.keys(selectedAttributes).length === 0) {
       const defaults: { [key: string]: string } = {};
@@ -148,13 +145,9 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
         }
       });
       setSelectedAttributes(defaults);
-      if (colorAttr && colorAttr.options && colorAttr.options.length > 0) {
-        // Safe default color setup
-      }
     }
   }, [currentProduct, allAttributes]);
 
-  // Dynamic Variations Matcher logic
   useEffect(() => {
     if (currentVariations?.length > 0 && Object.keys(selectedAttributes).length > 0) {
       const targetVariant = currentVariations.find((v: any) => {
@@ -362,7 +355,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </AnimatePresence>
               </div>
 
-              {/* 👑 1. COLOR ATTRIBUTE SECTION */}
               {colorAttr && (
                 <div className="space-y-4 border-b border-neutral-100 pb-6">
                   <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">Color: <span className="text-black font-bold uppercase underline decoration-[#C5A358] decoration-2">{selectedAttributes[colorAttr.name.toLowerCase()]}</span></p>
@@ -382,7 +374,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 </div>
               )}
 
-              {/* 👑 2. 100% AUTOMATIC NON-COLOR ATTRIBUTES LOOP (Cup Size, Bands Size, Size, Width, Fit Sab Isme Ayega!) */}
               {nonColorAttributes.map((attr: any, aIdx: number) => {
                 const currentSelection = selectedAttributes[attr.name.toLowerCase()] || "";
                 return (
@@ -392,7 +383,6 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                       {attr.options.map((opt: string) => {
                         const isSelected = currentSelection.toLowerCase() === opt.toLowerCase();
                         
-                        // Price variation look-up for specific choice combinations
                         const matchingVariant = currentVariations?.find((v: any) => {
                           return v.attributes.some((vAttr: any) => vAttr.name.toLowerCase() === attr.name.toLowerCase() && vAttr.option?.toLowerCase() === opt?.toLowerCase());
                         });
@@ -426,17 +416,55 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-1 gap-3">
-                    <button type="button" onClick={handleReserveInBag} disabled={isAdding || isOutOfStock} className={`w-full py-5 rounded-full text-[11px] font-black uppercase tracking-[5px] transition-all duration-500 border-2 flex items-center justify-center gap-2 ${isOutOfStock ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' : isAddedSuccess ? 'bg-[#00a65a] border-[#00a65a] text-white' : 'bg-transparent border-black text-black hover:bg-black hover:text-white'}`}>
-                      {isOutOfStock ? "Sold Out" : isAdding ? <><Loader2 size={14} className="animate-spin" /> Securing Piece...</> : isAddedSuccess ? <><CheckCircle2 size={14} /> Added to Bag</> : "Reserve in Bag"}
-                    </button>
-                 </div>
+                 {/* 👑 PREMIUM DUAL BUTTON MATRIX WITH TRUST PHRASE INJECTED */}
+                 <div className="space-y-5 pt-2">
+                    
+                    {/* 🔒 THE EXCLUSIVE TRUST PHRASE */}
+                    <div className="space-y-1 bg-neutral-50/70 p-4 border border-neutral-100/80 rounded-2xl">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-950 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Payment Methods / PayPal
+                      </p>
+                      <p className="text-[10px] text-neutral-400 font-medium leading-relaxed max-w-sm">
+                        Pay easily, quickly, and securely with PayPal. Enjoy instant encrypted checkout, 180-day buyer protection, and zero shared financial credentials.
+                      </p>
+                    </div>
 
-                 {!isOutOfStock && (
-                   <div className="space-y-2 pt-2 z-10 relative">
-                     <PayPalButtons style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }} createOrder={(data, actions) => actions.order.create({ intent: "CAPTURE", purchase_units: [{ description: currentProduct.name, amount: { currency_code: "USD", value: (currentPriceValue * qty).toFixed(2) } }] })} onApprove={async (data, actions) => { const details = await actions.order?.capture(); alert(`Transaction completed safely by ${details?.payer?.name?.given_name}`); }} />
-                   </div>
-                 )}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      {/* BUTTON 1: ADD TO BAG */}
+                      <button 
+                        type="button" 
+                        onClick={handleReserveInBag} 
+                        disabled={isAdding || isOutOfStock} 
+                        className={`flex-1 py-5 rounded-full text-[11px] font-black uppercase tracking-[4px] transition-all duration-300 border border-neutral-900 bg-transparent text-neutral-900 hover:bg-neutral-50 flex items-center justify-center gap-2 ${isOutOfStock ? 'opacity-20 cursor-not-allowed border-neutral-200' : ''}`}
+                      >
+                        {isOutOfStock ? "Sold Out" : isAdding ? <><Loader2 size={14} className="animate-spin" /> Securing Piece...</> : isAddedSuccess ? <><CheckCircle2 size={14} /> Added to Bag</> : "Add to Bag"}
+                      </button>
+
+                      {/* BUTTON 2: EXPRESS BUY NOW */}
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (!currentProduct || isOutOfStock) return;
+                          addToCart({
+                            id: currentProduct.id,
+                            name: currentProduct.name,
+                            price: displayPrice || currentProduct.price || "0.00",
+                            quantity: Number(qty),
+                            selectedColor: selectedAttributes['color'] || selectedAttributes['colour'] || undefined,
+                            image: activeImage || (currentProduct.images?.[0]?.src || ""),
+                            options: selectedAttributes
+                          });
+                          router.push('/checkout'); 
+                        }}
+                        disabled={isOutOfStock}
+                        className={`flex-1 py-5 rounded-full text-[11px] font-black uppercase tracking-[4px] transition-all duration-300 bg-neutral-950 text-white hover:bg-neutral-800 flex items-center justify-center gap-2 ${isOutOfStock ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' : ''}`}
+                      >
+                        {isOutOfStock ? "Sold Out" : "Buy Now"}
+                      </button>
+                    </div>
+                    
+                 </div>
 
                  <div className="border border-neutral-100 bg-[#fbfbfb] rounded-[28px] p-6 space-y-5 text-[#333333] mt-8 shadow-sm">
                     <div className="flex items-start gap-3.5 pb-4 border-b border-neutral-200/50">
