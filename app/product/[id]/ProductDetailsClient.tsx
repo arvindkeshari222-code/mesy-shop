@@ -15,8 +15,10 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
   const [currentVariations, setCurrentVariations] = useState(initialVariations);
 
   const [activeImage, setActiveImage] = useState(currentProduct?.images?.[0]?.src || "");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [selectedSize, setSelectedSize] = useState(""); 
+  
+  // 👑 DYNAMIC ATTRIBUTES STATE: Ab saare variations is single object me save honge
+  const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({});
+  
   const [displayPrice, setDisplayPrice] = useState(currentProduct?.price || "0.00");
   const [qty, setQty] = useState(1);
   const [zoomStyle, setZoomStyle] = useState({ display: 'none', backgroundPosition: '0% 0%' });
@@ -128,26 +130,43 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
 
   const images = currentProduct?.images || [];
   const shortDescContent = currentProduct?.short_description || currentProduct?.excerpt || "Premium tailored architecture designed with unmatched precision.";
-  const colorAttr = currentProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
-  const sizeAttr = currentProduct?.attributes?.find((a: any) => a.name.toLowerCase().includes('size'));
 
+  // 👑 AUTOMATIC ATTRIBUTES PARSER: WooCommerce ke saare attributes nikalega line se
+  const allAttributes = currentProduct?.attributes || [];
+  const colorAttr = allAttributes.find((a: any) => a.name.toLowerCase().includes('color') || a.name.toLowerCase().includes('colour'));
+  
+  // Non-color attributes yaani saare options (Size, Cup Size, Band Size, Extra Attributes sab isme aayenge)
+  const nonColorAttributes = allAttributes.filter((a: any) => !a.name.toLowerCase().includes('color') && !a.name.toLowerCase().includes('colour'));
+
+  // Default values set karne ke liye logic
   useEffect(() => { 
-    if (colorAttr && colorAttr.options && !selectedColor) setSelectedColor(colorAttr.options[0]);
-    if (sizeAttr && sizeAttr.options && !selectedSize) setSelectedSize(sizeAttr.options[0]);
-  }, [currentProduct, colorAttr, sizeAttr, selectedColor, selectedSize]);
-
-  useEffect(() => {
-    if (currentVariations?.length > 0) {
-      const variant = currentVariations.find((v: any) => {
-        const matchColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
-        const matchSize = sizeAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase()) : true;
-        return matchColor && matchSize;
+    if (allAttributes.length > 0 && Object.keys(selectedAttributes).length === 0) {
+      const defaults: { [key: string]: string } = {};
+      allAttributes.forEach((attr: any) => {
+        if (attr.options && attr.options.length > 0) {
+          defaults[attr.name.toLowerCase()] = attr.options[0];
+        }
       });
-      const targetVariant = variant || currentVariations.find((v: any) => (colorAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase())) || (sizeAttr && v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedSize?.toLowerCase())));
+      setSelectedAttributes(defaults);
+      if (colorAttr && colorAttr.options && colorAttr.options.length > 0) {
+        // Safe default color setup
+      }
+    }
+  }, [currentProduct, allAttributes]);
+
+  // Dynamic Variations Matcher logic
+  useEffect(() => {
+    if (currentVariations?.length > 0 && Object.keys(selectedAttributes).length > 0) {
+      const targetVariant = currentVariations.find((v: any) => {
+        return v.attributes.every((vAttr: any) => {
+          const selectedVal = selectedAttributes[vAttr.name.toLowerCase()];
+          return !selectedVal || selectedVal.toLowerCase() === vAttr.option?.toLowerCase();
+        });
+      });
 
       if (targetVariant) {
         if (targetVariant.price) setDisplayPrice(targetVariant.price);
-        if (targetVariant.image?.src && selectedColor) {
+        if (targetVariant.image?.src) {
           setActiveImage(targetVariant.image.src);
           const idx = images.findIndex((img: any) => img.src === targetVariant.image.src);
           if (idx !== -1) {
@@ -157,7 +176,14 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
         }
       }
     } else if (currentProduct?.price) setDisplayPrice(currentProduct.price);
-  }, [selectedColor, selectedSize, currentVariations, currentProduct, images, colorAttr, sizeAttr]);
+  }, [selectedAttributes, currentVariations, currentProduct, images]);
+
+  const handleAttributeChange = (attributeName: string, optionValue: string) => {
+    setSelectedAttributes(prev => ({
+      ...prev,
+      [attributeName.toLowerCase()]: optionValue
+    }));
+  };
 
   const handlePageChange = (targetPage: number) => {
     if (targetPage < 1 || targetPage > totalPages) return;
@@ -194,9 +220,9 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
         name: currentProduct.name,
         price: displayPrice || currentProduct.price || "0.00",
         quantity: Number(qty),
-        selectedColor: selectedColor || undefined,
+        selectedColor: selectedAttributes['color'] || selectedAttributes['colour'] || undefined,
         image: activeImage || (currentProduct.images?.[0]?.src || ""),
-        options: { ...(selectedColor && { Color: selectedColor }), ...(selectedSize && { Size: selectedSize }) }
+        options: selectedAttributes
       });
       setIsAdding(false);
       setIsAddedSuccess(true);
@@ -336,16 +362,17 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                  </AnimatePresence>
               </div>
 
+              {/* 👑 1. COLOR ATTRIBUTE SECTION */}
               {colorAttr && (
                 <div className="space-y-4 border-b border-neutral-100 pb-6">
-                  <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">Color: <span className="text-black font-bold uppercase underline decoration-[#C5A358] decoration-2">{selectedColor}</span></p>
+                  <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">Color: <span className="text-black font-bold uppercase underline decoration-[#C5A358] decoration-2">{selectedAttributes[colorAttr.name.toLowerCase()]}</span></p>
                   <div className="flex flex-wrap gap-3.5 pt-1">
                     {colorAttr.options.map((opt: string) => {
                       const variantMatch = currentVariations?.find((v: any) => v.attributes.some((attr: any) => attr.option?.toLowerCase() === opt?.toLowerCase()));
                       const thumbImg = variantMatch?.image?.src || currentProduct?.images?.[0]?.src;
-                      const isSelected = selectedColor?.toLowerCase() === opt?.toLowerCase();
+                      const isSelected = selectedAttributes[colorAttr.name.toLowerCase()]?.toLowerCase() === opt?.toLowerCase();
                       return (
-                        <button key={opt} type="button" onClick={() => setSelectedColor(opt)} className={`group/thumb relative aspect-square w-[72px] rounded-2xl overflow-hidden p-1 border-2 transition-all duration-300 ${isSelected ? 'border-neutral-900 scale-105 shadow-md shadow-neutral-100' : 'border-neutral-200/60 opacity-60 hover:opacity-100 hover:border-neutral-400'}`}>
+                        <button key={opt} type="button" onClick={() => handleAttributeChange(colorAttr.name, opt)} className={`group/thumb relative aspect-square w-[72px] rounded-2xl overflow-hidden p-1 border-2 transition-all duration-300 ${isSelected ? 'border-neutral-900 scale-105 shadow-md shadow-neutral-100' : 'border-neutral-200/60 opacity-60 hover:opacity-100 hover:border-neutral-400'}`}>
                           {thumbImg ? <img src={thumbImg} className="w-full h-full object-cover rounded-xl" alt={opt} /> : <span className="text-[8px] font-black text-neutral-400">{opt}</span>}
                           {isSelected && <div className="absolute top-1 right-1 bg-neutral-950 text-white p-0.5 rounded-full border border-white shadow-sm"><Check size={8} strokeWidth={3} /></div>}
                         </button>
@@ -355,29 +382,39 @@ export default function ProductDetailsClient({ initialProduct, initialVariations
                 </div>
               )}
 
-              {sizeAttr && (
-                <div className="space-y-4 pb-2">
-                  <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">Size: <span className="text-black font-bold uppercase underline decoration-neutral-900">{selectedSize}</span></p>
-                  <div className="flex flex-wrap gap-2.5 pt-1 relative">
-                    {sizeAttr.options.map((sz: string) => {
-                      const isSelected = selectedSize?.toLowerCase() === sz?.toLowerCase();
-                      const matchingSizeVariant = currentVariations?.find((v: any) => {
-                        const hasSize = v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase());
-                        const hasColor = colorAttr ? v.attributes.some((attr: any) => attr.option?.toLowerCase() === selectedColor?.toLowerCase()) : true;
-                        return hasSize && hasColor;
-                      }) || currentVariations?.find((v: any) => v.attributes.some((attr: any) => attr.option?.toLowerCase() === sz?.toLowerCase()));
-                      const sizePriceStr = matchingSizeVariant?.price ? `$${parseFloat(matchingSizeVariant.price).toFixed(2)}` : `$${parseFloat(currentProduct?.price || "0.00").toFixed(2)}`;
-                      return (
-                        <button key={sz} type="button" onClick={() => setSelectedSize(sz)} className={`relative px-5 py-2.5 rounded-xl border transition-all duration-300 overflow-hidden select-none flex flex-col items-center justify-center min-w-[105px] text-center ${isSelected ? 'text-black border-neutral-950 font-black shadow-sm bg-white' : 'bg-neutral-50/50 border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:bg-white'}`}>
-                          {isSelected && <motion.div layoutId="activeSizePill" className="absolute inset-0 bg-white border-2 border-neutral-950 rounded-xl -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
-                          <span className="relative z-10 text-xs uppercase tracking-wide font-bold">{sz}</span>
-                          <span className={`relative z-10 text-[9px] mt-0.5 tracking-tighter ${isSelected ? 'text-[#C5A358] font-black' : 'text-neutral-400 font-light'}`}>{sizePriceStr}</span>
-                        </button>
-                      );
-                    })}
+              {/* 👑 2. 100% AUTOMATIC NON-COLOR ATTRIBUTES LOOP (Cup Size, Bands Size, Size, Width, Fit Sab Isme Ayega!) */}
+              {nonColorAttributes.map((attr: any, aIdx: number) => {
+                const currentSelection = selectedAttributes[attr.name.toLowerCase()] || "";
+                return (
+                  <div key={attr.name + aIdx} className="space-y-4 pb-4 border-b border-neutral-100 last:border-none">
+                    <p className="text-[11px] font-black uppercase tracking-[4px] text-gray-400 italic">{attr.name}: <span className="text-black font-bold uppercase underline decoration-neutral-900">{currentSelection}</span></p>
+                    <div className="flex flex-wrap gap-2.5 pt-1 relative">
+                      {attr.options.map((opt: string) => {
+                        const isSelected = currentSelection.toLowerCase() === opt.toLowerCase();
+                        
+                        // Price variation look-up for specific choice combinations
+                        const matchingVariant = currentVariations?.find((v: any) => {
+                          return v.attributes.some((vAttr: any) => vAttr.name.toLowerCase() === attr.name.toLowerCase() && vAttr.option?.toLowerCase() === opt?.toLowerCase());
+                        });
+                        const optionPriceStr = matchingVariant?.price ? `$${parseFloat(matchingVariant.price).toFixed(2)}` : `$${parseFloat(currentProduct?.price || "0.00").toFixed(2)}`;
+                        
+                        return (
+                          <button 
+                            key={opt} 
+                            type="button" 
+                            onClick={() => handleAttributeChange(attr.name, opt)} 
+                            className={`relative px-5 py-2.5 rounded-xl border transition-all duration-300 overflow-hidden select-none flex flex-col items-center justify-center min-w-[105px] text-center ${isSelected ? 'text-black border-neutral-950 font-black shadow-sm bg-white' : 'bg-neutral-50/50 border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:bg-white'}`}
+                          >
+                            {isSelected && <motion.div layoutId={`activePill-${attr.name}`} className="absolute inset-0 bg-white border-2 border-neutral-950 rounded-xl -z-10" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                            <span className="relative z-10 text-xs uppercase tracking-wide font-bold">{opt}</span>
+                            <span className={`relative z-10 text-[9px] mt-0.5 tracking-tighter ${isSelected ? 'text-[#C5A358] font-black' : 'text-neutral-400 font-light'}`}>{optionPriceStr}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
 
               <div className="space-y-6 pt-2">
                  <div className="flex items-center justify-between border-t border-gray-50 pt-6">
