@@ -13,6 +13,7 @@
     "@stripe/react-stripe-js": "^6.4.0",
     "@stripe/stripe-js": "^9.6.0",
     "@woocommerce/woocommerce-rest-api": "^1.0.2",
+    "country-state-city": "^3.2.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",

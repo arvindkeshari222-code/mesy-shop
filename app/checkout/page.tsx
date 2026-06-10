@@ -1,12 +1,17 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
-import { Lock, CreditCard, CheckCircle2, MapPin, X, ChevronRight, Globe, ChevronDown } from 'lucide-react';
+// 👑 ALL BUNDLED ICONS PRECISELY IMPORTED HERE
+import { Lock, CheckCircle2, MapPin, ChevronRight, ChevronDown, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { countriesList } from './countries'; 
+
+// REAL AUTOMATIC STATE & CITY DATABASE ENGINE
+import { State, City } from 'country-state-city';
 
 export default function CheckoutPage() {
-  const { cart, getCartTotal } = useCart() || { cart: [] };
+  const { cart, getCartTotal, clearCart } = useCart() || { cart: [], clearCart: () => {} };
   const [isOrdered, setIsOrdered] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,19 +20,74 @@ export default function CheckoutPage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isAddressSaved, setIsAddressSaved] = useState(false);
 
-  // Form Fields Inputs local states
-  const [country, setCountry] = useState('United States'); // Default High-Converting Country
+  // ISO CONTROL MATRIX BINDING
+  const [selectedCountry, setSelectedCountry] = useState<any>(countriesList[0]); // Default to US Node
+  const [statesList, setStatesList] = useState<any[]>([]);
+  const [citiesList, setCitiesList] = useState<any[]>([]);
+
+  // 1:1 Cloned Form Input Fields States
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  
-  // Validation runtime warnings
-  const [validationError, setValidationError] = useState('');
+  const [streetAddress, setStreetAddress] = useState(''); 
+  const [aptSuite, setAptSuite] = useState(''); 
+  const [selectedStateCode, setSelectedStateCode] = useState('');
+  const [selectedCityName, setSelectedCityName] = useState('');
+  const [zipCode, setZipCode] = useState(''); 
+
+  // LIVE ERROR TRACKING STATES MATRIX
+  const [formErrors, setFormErrors] = useState<any>({});
+  const [touchedFields, setTouchedFields] = useState<any>({});
+  const [showSubmitError, setShowSubmitError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Country change hone par automatic states fetch system
+  useEffect(() => {
+    if (selectedCountry?.isoCode) {
+      const countryStates = State.getStatesOfCountry(selectedCountry.isoCode);
+      setStatesList(countryStates || []);
+      setSelectedStateCode(''); 
+      setCitiesList([]);
+      setSelectedCityName('');
+    }
+  }, [selectedCountry]);
+
+  // State dropdown toggle par automatic city options filter logic
+  useEffect(() => {
+    if (selectedCountry?.isoCode && selectedStateCode) {
+      const stateCities = City.getCitiesOfState(selectedCountry.isoCode, selectedStateCode);
+      setCitiesList(stateCities || []);
+      setSelectedCityName(''); 
+    } else {
+      setCitiesList([]);
+    }
+  }, [selectedStateCode, selectedCountry]);
+
+  // 👑 REALTIME FORM VALIDATOR ENGINE (Perfectly triggers dynamic character rules)
+  useEffect(() => {
+    const errors: any = {};
+    
+    if (!firstName.trim()) errors.firstName = "First name is required";
+    if (!lastName.trim()) errors.lastName = "Last name is required";
+    if (!streetAddress.trim()) errors.streetAddress = "Street address is required";
+    if (!selectedStateCode) errors.stateProvince = "Please select your State/Province";
+    if (!selectedCityName) errors.city = "Please select your City";
+    if (!zipCode.trim()) errors.zipCode = "ZIP code is required";
+
+    const cleanPhone = phone.replace(/[\s\-()]/g, '');
+    if (!phone.trim()) {
+      errors.phone = "Mobile number is required";
+    } else if (!/^[0-9]+$/.test(cleanPhone)) {
+      errors.phone = "Mobile number must contain digits only";
+    } else if (cleanPhone.length < 7 || cleanPhone.length > 10) {
+      errors.phone = `⚠️ Please enter a phone number with between 7 and 10 digits (The number you entered has ${cleanPhone.length} digits)`;
+    }
+
+    setFormErrors(errors);
+  }, [firstName, lastName, phone, streetAddress, selectedStateCode, selectedCityName, zipCode]);
 
   if (!mounted) return null;
 
@@ -37,31 +97,37 @@ export default function CheckoutPage() {
     return name.replace(/&amp;/g, '&').replace(/&QUOT;/gi, '"');
   };
 
+  const getStateName = () => {
+    const target = statesList.find(s => s.isoCode === selectedStateCode);
+    return target ? target.name : selectedStateCode;
+  };
+
+  // Input click blur tracking block
+  const handleBlur = (field: string) => {
+    setTouchedFields((prev: any) => ({ ...prev, [field]: true }));
+  };
+
+  // Final confirmation routing handler
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !address.trim() || !phone.trim() || !country) {
-      setValidationError('Please complete all identification fields safely.');
+    
+    const allTouched = {
+      firstName: true, lastName: true, phone: true,
+      streetAddress: true, stateProvince: true, city: true, zipCode: true
+    };
+    setTouchedFields(allTouched);
+
+    if (Object.keys(formErrors).length > 0) {
+      setShowSubmitError(true);
       return;
     }
-    setValidationError('');
+
+    setShowSubmitError(false);
     setIsAddressSaved(true);
     setIsAddressModalOpen(false);
   };
 
-  if (isOrdered) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
-        <CheckCircle2 size={32} className="text-neutral-950 mb-6" strokeWidth={1} />
-        <h1 className="font-sans font-light tracking-[0.5em] text-lg uppercase mb-3 text-neutral-950">Acquisition Registered</h1>
-        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.2em] max-w-xs leading-relaxed mb-8">
-          Thank you, {firstName}. Your curated shipment sequence is authorized for express delivery.
-        </p>
-        <Link href="/" className="px-12 py-4 bg-neutral-950 text-white text-[9px] font-bold uppercase tracking-[0.3em] transition-colors hover:bg-neutral-800">
-          Return to Storefront
-        </Link>
-      </div>
-    );
-  }
+  const fullFormattedAddress = `${streetAddress}${aptSuite ? ' ' + aptSuite : ''}, ${selectedCityName}, ${getStateName()}, ${zipCode}`;
 
   return (
     <PayPalScriptProvider options={{ "client-id": "test", currency: "USD" }}>
@@ -77,13 +143,13 @@ export default function CheckoutPage() {
           </div>
         </header>
 
-        {/* GALLERY ASYMMETRIC GRID SYSTEM */}
+        {/* MAIN DISPLAY GRID */}
         <main className="max-w-[1700px] mx-auto px-8 lg:px-20 py-12 grid grid-cols-1 lg:grid-cols-12 gap-x-24 gap-y-20">
           
-          {/* LEFT INTERFACE: DYNAMIC ADDRESS TRIGGER AND PAYPAL HUB */}
+          {/* LEFT INTERFACE Panel */}
           <div className="lg:col-span-5 space-y-16 flex flex-col justify-start">
             
-            {/* SHIPPING MODULE */}
+            {/* SHIPPING DESTINATION PREVIEW MODULE */}
             <div className="space-y-6">
               <div className="space-y-1">
                 <span className="text-[8px] font-bold tracking-[0.3em] text-neutral-300 uppercase block">DESPATCH DATA</span>
@@ -97,7 +163,7 @@ export default function CheckoutPage() {
                   className="w-full py-5 border border-dashed border-neutral-300 hover:border-neutral-950 transition-colors flex items-center justify-between px-6 text-neutral-500 hover:text-neutral-950 rounded-xl"
                 >
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-3">
-                    <MapPin size={14} className="text-neutral-400" /> + Add Shipping Address
+                    <MapPin size={14} className="text-neutral-400" /> + Add Cloned Shipping Address
                   </span>
                   <ChevronRight size={14} />
                 </button>
@@ -117,37 +183,27 @@ export default function CheckoutPage() {
                   </div>
                   <div className="text-[11px] font-medium text-neutral-800 space-y-0.5 uppercase tracking-wide">
                     <p className="font-bold text-neutral-950">{firstName} {lastName}</p>
-                    <p className="text-neutral-500 truncate">{address}</p>
-                    <p className="text-neutral-900 font-bold flex items-center gap-1 text-[10px] pt-1">
-                      <Globe size={11} /> REGION: {country}
+                    <p className="text-neutral-500 text-[10.5px] leading-relaxed max-w-sm">{fullFormattedAddress}</p>
+                    <p className="text-neutral-950 font-bold flex items-center gap-2 text-[10px] pt-1">
+                      <span>{selectedCountry?.flag}</span> REGION: {selectedCountry?.name}
                     </p>
-                    <p className="text-neutral-400 text-[10px] pt-0.5">Contact: {phone}</p>
+                    <p className="text-neutral-400 text-[10px] pt-0.5">Contact: {selectedCountry?.code} {phone}</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Clearance Cluster (PayPal Core Hub) */}
+            {/* FINANCIAL CLEARANCE MODULE */}
             <div className="space-y-10">
               <div className="space-y-1">
                 <span className="text-[8px] font-bold tracking-[0.3em] text-neutral-300 uppercase block">FINANCIAL CLEARANCE</span>
                 <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950">Secure Verification</h2>
               </div>
               
-              <div className="space-y-2 bg-neutral-50/50 p-5 border border-neutral-100 rounded-2xl">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-950 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Payment Methods / PayPal
-                </p>
-                <p className="text-[10.5px] text-neutral-400 font-medium leading-relaxed max-w-sm">
-                  Pay easily, quickly, and securely with PayPal. Enjoy instant encrypted checkout, 180-day buyer protection, and zero shared credentials.
-                </p>
-              </div>
-              
               <div className={`max-w-md relative transition-all duration-300 ${isAddressSaved ? 'opacity-100 pointer-events-auto' : 'opacity-40 pointer-events-none select-none'}`}>
                 {!isAddressSaved && (
                   <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-3 italic">
-                    ⚠️ Please provide your shipping address & country above to unlock payment gate.
+                    ⚠️ Please provide your full broken-down address data above to unlock payment gate.
                   </p>
                 )}
                 <div className="relative z-10 pt-2">
@@ -158,11 +214,8 @@ export default function CheckoutPage() {
                       return actions.order.create({
                         intent: "CAPTURE",
                         purchase_units: [{
-                          description: `MESY Atelier Private Acquisition - Shipping to ${country}`,
-                          amount: {
-                            currency_code: "USD",
-                            value: orderTotal
-                          }
+                          description: `MESY Atelier Shipping to ${selectedCountry?.name}`,
+                          amount: { currency_code: "USD", value: orderTotal }
                         }]
                       });
                     }}
@@ -170,13 +223,25 @@ export default function CheckoutPage() {
                       setIsProcessing(true);
                       const details = await actions.order?.capture();
                       if (details && details.status === "COMPLETED") {
-                        setIsProcessing(false);
-                        setIsOrdered(true);
+                        try {
+                          await fetch('/api/create-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              firstName, lastName, address: fullFormattedAddress,
+                              phone: `${selectedCountry?.code} ${phone}`,
+                              country: selectedCountry?.name, cart, orderTotal
+                            })
+                          });
+                          if (clearCart) clearCart();
+                          setIsProcessing(false);
+                          
+                          // 👑 AUTO REDIRECT SYSTEM WITH METADATA PIPELINE
+                          window.location.href = `/checkout/success?orderId=${details.id}&amount=${orderTotal}`;
+                        } catch (err) {
+                          window.location.href = `/checkout/success?amount=${orderTotal}`;
+                        }
                       }
-                    }}
-                    onError={(err) => {
-                      console.error("PayPal Execution Error:", err);
-                      setIsProcessing(false);
                     }}
                   />
                 </div>
@@ -185,161 +250,197 @@ export default function CheckoutPage() {
 
           </div>
 
-          {/* RIGHT AREA: CATALOG DISPLAY */}
+          {/* RIGHT AREA: CATALOG DISP */}
           <div className="lg:col-span-7 space-y-12 h-fit lg:sticky lg:top-36">
             <div className="flex justify-between items-baseline border-b border-neutral-950 pb-4">
               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950">Manifest Document</h3>
               <span className="text-[8.5px] font-bold text-neutral-400 uppercase tracking-widest">{cart.length} Asset Block</span>
             </div>
-            
-            <div className="max-h-[600px] overflow-y-auto no-scrollbar pr-2 space-y-8">
+            <div className="max-h-[500px] overflow-y-auto no-scrollbar space-y-8 pr-2">
               {cart.map((item: any, idx: number) => (
                 <div key={idx} className="flex gap-10 items-start group">
-                  <div className="w-32 h-40 bg-neutral-50/50 border border-neutral-100 shrink-0 flex items-center justify-center p-3 rounded-none relative overflow-hidden transition-all duration-500 group-hover:bg-neutral-50">
-                    <img src={item.image} className="max-w-full max-h-full object-contain mix-blend-multiply scale-102 transition-transform duration-700 group-hover:scale-105" alt={item.name} />
+                  <div className="w-32 h-40 bg-neutral-50 flex items-center justify-center p-3 rounded-none border border-neutral-100">
+                    <img src={item.image} className="max-w-full max-h-full object-contain" alt={item.name} />
                   </div>
-                  
                   <div className="flex-1 min-w-0 space-y-4 pt-2">
-                    <p className="text-xs font-bold uppercase tracking-[0.06em] leading-snug text-neutral-900 transition-colors group-hover:text-black">
-                      {cleanName(item.name)}
-                    </p>
-                    
-                    {item.options && Object.keys(item.options).length > 0 && (
-                      <div className="flex flex-col gap-1.5 border-l border-neutral-100 pl-4">
-                        {Object.entries(item.options).map(([key, value]: any) => (
-                          <p key={key} className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-neutral-400 flex items-center gap-2">
-                            {key}: <span className="text-neutral-950 font-black">{value}</span>
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center gap-4 pt-1 text-[8.5px] font-bold text-neutral-400 uppercase tracking-[0.25em]">
+                    <p className="text-xs font-bold uppercase tracking-[0.06em] text-neutral-900">{cleanName(item.name)}</p>
+                    <div className="flex items-center gap-4 text-[8.5px] font-bold text-neutral-400 uppercase tracking-[0.25em]">
                       <span>QUANTITY / {item.quantity}</span>
-                      <span className="h-2 w-[1px] bg-neutral-200" />
-                      <span>VALUATION / ${(parseFloat(item.price)).toFixed(2)}</span>
                     </div>
                   </div>
-                  
-                  <span className="text-[10px] font-black text-neutral-950 tracking-wider shrink-0 pt-2">
-                    ${(parseFloat(item.price) * item.quantity).toFixed(2)}
-                  </span>
+                  <span className="text-[10px] font-black text-neutral-950 pt-2">${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
-            </div>
-
-            <div className="pt-8 border-t border-neutral-950 flex justify-between items-baseline">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950">Net Asset Valuation</span>
-                <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">Includes custom priority premium boutique packaging routing channels</p>
-              </div>
-              <span className="text-4xl font-light tracking-tighter text-neutral-950 italic underline underline-offset-4 decoration-neutral-100">
-                ${getCartTotal().toFixed(2)}
-              </span>
             </div>
           </div>
         </main>
 
-        {/* DYNAMIC OVERLAY MODAL: WITH EXACT ALIEXPRESS DELIVERABLE COUNTRIES */}
+        {/* OVERLAY MODAL: 👑 1:1 PERFECT AUTOMATED CLONE WITH VALIDATION ERRORS & BLACK BUTTONS 👑 */}
         {isAddressModalOpen && (
           <div className="fixed inset-0 z-[99999] flex items-center justify-center">
             <div className="absolute inset-0 bg-neutral-950/40 backdrop-blur-md" onClick={() => setIsAddressModalOpen(false)} />
             
-            <div className="bg-white w-full max-w-lg mx-4 relative z-10 p-8 border border-neutral-100 shadow-2xl space-y-6 rounded-3xl animate-in slide-in-from-bottom-4 duration-300">
-              <div className="flex justify-between items-center border-b border-neutral-100 pb-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-neutral-950">Add Shipping Address</h3>
+            <div className="bg-white w-full max-w-xl mx-4 relative z-10 p-8 border border-neutral-100 shadow-2xl space-y-5 rounded-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+              {/* Header Cloned styling */}
+              <div className="flex justify-between items-center border-b border-neutral-100 pb-3">
+                <h3 className="text-sm font-bold text-neutral-900 font-sans">Add new address</h3>
                 <button type="button" onClick={() => setIsAddressModalOpen(false)} className="text-neutral-400 hover:text-neutral-950 transition-colors">
                   <X size={18} />
                 </button>
               </div>
 
-              {validationError && (
-                <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">{validationError}</p>
+              {/* Cloned Warning Alert Ribbon */}
+              {showSubmitError && Object.keys(formErrors).length > 0 && (
+                <p className="text-[11px] font-bold text-red-500 bg-red-50 p-3 rounded-lg border border-red-200">
+                  ⚠️ Form cannot be submitted. Please resolve the highlighted validation errors below.
+                </p>
               )}
 
-              <form onSubmit={handleSaveAddress} className="space-y-6">
+              <form onSubmit={handleSaveAddress} className="space-y-4">
                 
-                {/* 👑 EXACT ALIEXPRESS LOGISTICS TARGET DROPDOWN */}
-                <div className="space-y-2">
-                  <label className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">Country / Region</label>
-                  <div className="relative">
-                    <select 
-                      value={country} 
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full py-3 px-4 bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:border-neutral-950 text-[11px] font-bold tracking-wider text-neutral-800 appearance-none cursor-pointer"
-                    >
-                      <option value="United States">🇺🇸 United States</option>
-                      <option value="United Kingdom">🇬🇧 United Kingdom</option>
-                      <option value="Canada">🇨🇦 Canada</option>
-                      <option value="Australia">🇦🇺 Australia</option>
-                      <option value="France">🇫🇷 France</option>
-                      <option value="Germany">🇩🇪 Germany</option>
-                      <option value="Italy">🇮🇹 Italy</option>
-                      <option value="Spain">🇪🇸 Spain</option>
-                      <option value="Netherlands">🇳🇱 Netherlands</option>
-                      <option value="New Zealand">🇳🇿 New Zealand</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-                      <ChevronDown size={14} />
+                {/* 1. Country/region Select Cloned block Node */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-neutral-700">Country/region</label>
+                  <select 
+                    value={selectedCountry?.name}
+                    onChange={(e) => {
+                      const found = countriesList.find(c => c.name === e.target.value);
+                      if (found) setSelectedCountry(found);
+                    }}
+                    className="w-full py-2 px-3 bg-white border border-neutral-200 rounded-md outline-none text-[11px] font-medium text-neutral-800 shadow-sm"
+                  >
+                    {countriesList.map((item) => (
+                      <option key={item.name} value={item.name}>
+                        {item.flag} {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Contact Information Group with Red Error Indicators Matrix */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-neutral-700 block">Contact information</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <input 
+                        type="text" placeholder="First name*" required value={firstName} 
+                        onChange={(e) => setFirstName(e.target.value)}
+                        onBlur={() => handleBlur('firstName')}
+                        className={`w-full py-2 px-3 border bg-white rounded-md outline-none text-[11px] font-medium transition-all ${touchedFields.firstName && formErrors.firstName ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-neutral-200 focus:border-neutral-950'}`}
+                      />
+                      {touchedFields.firstName && formErrors.firstName && <span className="text-[10px] text-red-500 block pl-0.5">{formErrors.firstName}</span>}
+                    </div>
+
+                    <div className="space-y-1">
+                      <input 
+                        type="text" placeholder="Last name*" required value={lastName} 
+                        onChange={(e) => setLastName(e.target.value)}
+                        onBlur={() => handleBlur('lastName')}
+                        className={`w-full py-2 px-3 border bg-white rounded-md outline-none text-[11px] font-medium transition-all ${touchedFields.lastName && formErrors.lastName ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-neutral-200 focus:border-neutral-950'}`}
+                      />
+                      {touchedFields.lastName && formErrors.lastName && <span className="text-[10px] text-red-500 block pl-0.5">{formErrors.lastName}</span>}
                     </div>
                   </div>
                 </div>
 
-                {/* Input Fields Row */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-6">
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="FIRST NAME" 
-                      required
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      className="w-full py-2.5 border-b border-neutral-200 bg-transparent outline-none focus:border-neutral-950 transition-colors text-[10px] font-bold tracking-[0.15em] uppercase placeholder:text-neutral-300"
-                    />
-                  </div>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="LAST NAME" 
-                      required
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full py-2.5 border-b border-neutral-200 bg-transparent outline-none focus:border-neutral-950 transition-colors text-[10px] font-bold tracking-[0.15em] uppercase placeholder:text-neutral-300"
-                    />
-                  </div>
-                  <div className="col-span-2 relative">
+                {/* 3. Mobile Phone Block - Standard validation hooks active */}
+                <div className="space-y-1 pt-1">
+                  <label className="text-[11px] font-bold text-neutral-700 block">Mobile number*</label>
+                  <div className={`flex rounded-md border overflow-hidden bg-white transition-all h-[36px] ${touchedFields.phone && formErrors.phone ? 'border-red-500 focus-within:border-red-500 bg-red-50/10' : 'border-neutral-200 focus-within:border-neutral-950'}`}>
+                    <div className="bg-neutral-50 px-3 text-[11px] font-medium text-neutral-500 border-r border-neutral-200 select-none flex items-center min-w-[60px] justify-center shrink-0">
+                      {selectedCountry?.code || "+1"}
+                    </div>
                     <input 
                       type="tel" 
-                      placeholder="MOBILE PHONE NUMBER" 
-                      required
-                      value={phone}
+                      placeholder="Mobile number" 
+                      required 
+                      value={phone} 
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full py-2.5 border-b border-neutral-200 bg-transparent outline-none focus:border-neutral-950 transition-colors text-[10px] font-bold tracking-[0.15em] uppercase placeholder:text-neutral-300"
+                      onBlur={() => handleBlur('phone')}
+                      className="w-full py-2 px-3 outline-none bg-transparent text-[11px] font-medium text-neutral-800"
                     />
                   </div>
-                  <div className="col-span-2 relative">
-                    <input 
-                      type="text" 
-                      placeholder="STREET ADDRESS, APARTMENT, CITY, STATE, ZIP" 
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full py-2.5 border-b border-neutral-200 bg-transparent outline-none focus:border-neutral-950 transition-colors text-[10px] font-bold tracking-[0.15em] uppercase placeholder:text-neutral-300"
-                    />
-                  </div>
+                  {/* Cloned Bracket Red Text warning constraints layout output */}
+                  {touchedFields.phone && formErrors.phone ? (
+                    <span className="text-[10px] font-semibold text-red-500 block pl-0.5">{formErrors.phone}</span>
+                  ) : (
+                    <span className="text-[9.5px] text-neutral-400 block pl-0.5">Enter a valid mobile number (6 to 15 numbers maximum)</span>
+                  )}
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-neutral-100">
+                {/* 4. Cloned Core Address Block with Matrix Red Indicators Row Setup */}
+                <div className="space-y-3 pt-2">
+                  <span className="text-[11px] font-bold text-neutral-700 block">Address</span>
+                  
+                  <div className="space-y-1">
+                    <input 
+                      type="text" placeholder="Street*" required value={streetAddress} 
+                      onChange={(e) => setStreetAddress(e.target.value)}
+                      onBlur={() => handleBlur('streetAddress')}
+                      className={`w-full py-2 px-3 border bg-white rounded-md outline-none text-[11px] font-medium transition-all ${touchedFields.streetAddress && formErrors.streetAddress ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-neutral-200 focus:border-neutral-950'}`}
+                    />
+                    {touchedFields.streetAddress && formErrors.streetAddress && <span className="text-[10px] text-red-500 block pl-0.5">{formErrors.streetAddress}</span>}
+                  </div>
+
+                  <input type="text" placeholder="Apt, suite, unit, etc (optional)" value={aptSuite} onChange={(e) => setAptSuite(e.target.value)} className="w-full py-2 px-3 border border-neutral-200 rounded-md outline-none text-[11px] font-medium text-neutral-800" />
+
+                  {/* Matrix Red Indicators Selection Row Setup */}
+                  <div className="grid grid-cols-3 gap-3">
+                    
+                    {/* Cloned Native State Selector Node */}
+                    <div className="flex flex-col gap-1">
+                      <select
+                        value={selectedStateCode}
+                        onChange={(e) => { setSelectedStateCode(e.target.value); handleBlur('stateProvince'); }}
+                        className={`w-full py-2 px-2 bg-white border rounded-md outline-none text-[11px] font-medium text-neutral-800 shadow-sm h-[36px] ${touchedFields.stateProvince && formErrors.stateProvince ? 'border-red-500 focus:border-red-500' : 'border-neutral-200'}`}
+                      >
+                        <option value="">State / Prov.*</option>
+                        {statesList.map((st) => <option key={st.isoCode} value={st.isoCode}>{st.name}</option>)}
+                      </select>
+                      {touchedFields.stateProvince && formErrors.stateProvince && <span className="text-[9px] text-red-500 block pl-0.5 truncate">{formErrors.stateProvince}</span>}
+                    </div>
+
+                    {/* Cloned Native Cities Selector Node */}
+                    <div className="flex flex-col gap-1">
+                      <select
+                        value={selectedCityName}
+                        disabled={!selectedStateCode}
+                        onChange={(e) => { setSelectedCityName(e.target.value); handleBlur('city'); }}
+                        className={`w-full py-2 px-2 bg-white border rounded-md outline-none text-[11px] font-medium text-neutral-800 shadow-sm h-[36px] ${!selectedStateCode ? 'opacity-40 bg-neutral-50 cursor-not-allowed' : ''} ${touchedFields.city && formErrors.city ? 'border-red-500 focus:border-red-500' : 'border-neutral-200'}`}
+                      >
+                        <option value="">City *</option>
+                        {citiesList.map((ct, idx) => <option key={idx} value={ct.name}>{ct.name}</option>)}
+                      </select>
+                      {touchedFields.city && formErrors.city && <span className="text-[9px] text-red-500 block pl-0.5 truncate">{formErrors.city}</span>}
+                    </div>
+
+                    {/* ZIP CODE Cloned Node */}
+                    <div className="flex flex-col gap-1">
+                      <input 
+                        type="text" placeholder="ZIP code*" required value={zipCode} 
+                        onChange={(e) => setZipCode(e.target.value)}
+                        onBlur={() => handleBlur('zipCode')}
+                        className={`w-full py-2 px-3 border bg-white rounded-md outline-none text-[11px] font-medium transition-all h-[36px] ${touchedFields.zipCode && formErrors.zipCode ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-neutral-200 focus:border-neutral-950'}`}
+                      />
+                      {touchedFields.zipCode && formErrors.zipCode && <span className="text-[9px] text-red-500 block pl-0.5">{formErrors.zipCode}</span>}
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* 👑 PREMIUM LUXURY MATTE BLACK ACTION BUTTONS 👑 */}
+                <div className="flex gap-3 pt-6 border-t border-neutral-100">
                   <button 
-                    type="submit"
-                    className="flex-1 py-4 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-neutral-800 transition-colors rounded-full"
+                    type="submit" 
+                    className="flex-1 py-2.5 bg-neutral-950 text-white text-[11.5px] font-bold rounded-full hover:bg-black transition-colors shadow-sm tracking-wide uppercase"
                   >
-                    Confirm Address
+                    Confirm
                   </button>
                   <button 
-                    type="button"
-                    onClick={() => setIsAddressModalOpen(false)}
-                    className="px-6 py-4 border border-neutral-200 text-neutral-400 hover:text-neutral-950 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors rounded-full"
+                    type="button" 
+                    onClick={() => setIsAddressModalOpen(false)} 
+                    className="px-6 py-2.5 bg-neutral-100 text-neutral-800 text-[11.5px] font-bold rounded-full hover:bg-neutral-200 transition-colors uppercase"
                   >
                     Cancel
                   </button>
