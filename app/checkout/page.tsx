@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
-// 👑 ALL BUNDLED ICONS PRECISELY IMPORTED HERE
+// 👑 ALL BUNDLED ICONS PRECISELY IMPORTED HERE (Zero Reference Errors)
 import { Lock, CheckCircle2, MapPin, ChevronRight, ChevronDown, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
@@ -66,7 +66,7 @@ export default function CheckoutPage() {
     }
   }, [selectedStateCode, selectedCountry]);
 
-  // 👑 REALTIME FORM VALIDATOR ENGINE (Perfectly triggers dynamic character rules)
+  // 👑 REALTIME FORM VALIDATOR ENGINE (Perfectly tracks dynamic character rules)
   useEffect(() => {
     const errors: any = {};
     
@@ -250,7 +250,7 @@ export default function CheckoutPage() {
 
           </div>
 
-          {/* RIGHT AREA: CATALOG DISP */}
+          {/* 👑 RIGHT AREA: CATALOG DISP (FIXED: Synced perfectly with item.options Format) 👑 */}
           <div className="lg:col-span-7 space-y-12 h-fit lg:sticky lg:top-36">
             <div className="flex justify-between items-baseline border-b border-neutral-950 pb-4">
               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950">Manifest Document</h3>
@@ -259,18 +259,43 @@ export default function CheckoutPage() {
             <div className="max-h-[500px] overflow-y-auto no-scrollbar space-y-8 pr-2">
               {cart.map((item: any, idx: number) => (
                 <div key={idx} className="flex gap-10 items-start group">
-                  <div className="w-32 h-40 bg-neutral-50 flex items-center justify-center p-3 rounded-none border border-neutral-100">
+                  <div className="w-32 h-40 bg-neutral-50 flex items-center justify-center p-3 rounded-none border border-neutral-100 shrink-0">
                     <img src={item.image} className="max-w-full max-h-full object-contain" alt={item.name} />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-4 pt-2">
-                    <p className="text-xs font-bold uppercase tracking-[0.06em] text-neutral-900">{cleanName(item.name)}</p>
-                    <div className="flex items-center gap-4 text-[8.5px] font-bold text-neutral-400 uppercase tracking-[0.25em]">
+                  <div className="flex-1 min-w-0 space-y-3 pt-2">
+                    <p className="text-xs font-bold uppercase tracking-[0.06em] text-neutral-900 leading-relaxed">{cleanName(item.name)}</p>
+                    
+                    {/* 👑 ASALI FIX: Directly pulling from item.options matrix exactly like Cart page */}
+                    {item.options && Object.keys(item.options).length > 0 && (
+                      <div className="space-y-1 text-[8.5px] font-bold text-neutral-500 uppercase tracking-[0.2em] bg-neutral-50 p-2.5 rounded-xl border border-neutral-100/60 w-fit min-w-[140px]">
+                        {Object.entries(item.options).map(([key, value]: any) => (
+                          <p key={key} className="leading-tight">
+                            <span className="text-neutral-400 font-semibold">{key}:</span> <span className="text-neutral-950 font-black">{value}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 text-[8.5px] font-bold text-neutral-400 uppercase tracking-[0.25em] pt-1">
                       <span>QUANTITY / {item.quantity}</span>
+                      <span className="h-2 w-[1px] bg-neutral-200" />
+                      <span>VALUATION / ${(parseFloat(item.price)).toFixed(2)}</span>
                     </div>
                   </div>
                   <span className="text-[10px] font-black text-neutral-950 pt-2">${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Total Valuation Card Block */}
+            <div className="pt-8 border-t border-neutral-950 flex justify-between items-baseline">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-950">Net Asset Valuation</span>
+                <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">Includes custom priority premium boutique packaging routing channels</p>
+              </div>
+              <span className="text-4xl font-light tracking-tighter text-neutral-950 italic underline underline-offset-4 decoration-neutral-100">
+                ${getCartTotal().toFixed(2)}
+              </span>
             </div>
           </div>
         </main>
