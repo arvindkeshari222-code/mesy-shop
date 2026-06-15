@@ -130,7 +130,7 @@ export default function CheckoutPage() {
   const fullFormattedAddress = `${streetAddress}${aptSuite ? ' ' + aptSuite : ''}, ${selectedCityName}, ${getStateName()}, ${zipCode}`;
 
   return (
-    <PayPalScriptProvider options={{ "client-id": "ASHeA9nZS0SGYQskg2oC9NLm_k0q7X1Y9uVp1D6O3VqW5Z0Y7U1O2P3Q4R5S6T7U8V9W0X", currency: "USD" }}>
+    <PayPalScriptProvider options={{ "client-id": "ASheA9nZS0SGYQskg2oC9t1yuLZwvZZkT_qbwjaB6bYBC44ApI1-dvFJo7ilDgaFOKmOUXgSIjMXUExn", currency: "USD" }}>
       <div className="bg-white min-h-screen text-neutral-950 font-sans antialiased selection:bg-neutral-100 relative">
         
         {/* HEADER BRANDING */}
