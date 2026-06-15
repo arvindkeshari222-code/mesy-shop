@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // 👑 Added paypalOrderId and countryCode to avoid database sync drops
-    const { firstName, lastName, address, phone, country, countryCode, cart, orderTotal, paypalOrderId } = body;
+    // 👑 FIXED: Added "email" in destructuring to grab it from frontend payload
+    const { firstName, lastName, email, address, phone, country, countryCode, cart, orderTotal, paypalOrderId } = body;
 
     // 🔐 FIXED MATCHING: Automatically maps with your exact .env configuration matrix
     const wooUrl = process.env.NEXT_PUBLIC_WOO_URL;
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       billing: {
         first_name: firstName,
         last_name: lastName,
+        email: email, // 👈 👑 FIXED: This line maps email parameter directly into WooCommerce Dashboard
         address_1: address,
         phone: phone,
         country: countryCode || country || 'US' // 👈 Enforces 2-Letter ISO standard (US, CA, GB etc.)
