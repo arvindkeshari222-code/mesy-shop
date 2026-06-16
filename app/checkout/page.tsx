@@ -130,7 +130,7 @@ export default function CheckoutPage() {
   const fullFormattedAddress = `${streetAddress}${aptSuite ? ' ' + aptSuite : ''}, ${selectedCityName}, ${getStateName()}, ${zipCode}`;
 
   return (
-    <PayPalScriptProvider options={{ "client-id": "ASheA9nZS0SGYQskg2oC9t1yuLZwvZZkT_qbwjaB6bYBC44ApI1-dvFJo7ilDgaFOKmOUXgSIjMXUExn", currency: "USD" }}>
+    <PayPalScriptProvider options={{ "client-id": "BAAmkkRoFfJtaKJvHinDv9BTFI7kD80DvucB5NXKTS3lB9mZunY6_FCh3TKv0d62CZqBdRraQ27n-5LEDg", currency: "USD" }}>
       <div className="bg-white min-h-screen text-neutral-950 font-sans antialiased selection:bg-neutral-100 relative">
         
         {/* HEADER BRANDING */}
@@ -210,6 +210,7 @@ export default function CheckoutPage() {
                   <PayPalButtons 
                     style={{ layout: "vertical", color: "gold", shape: "pill", label: "pay" }}
                     disabled={isProcessing || !isAddressSaved}
+                    forceReRender={[orderTotal, isAddressSaved]}
                     createOrder={(data, actions) => {
                       return actions.order.create({
                         intent: "CAPTURE",
@@ -221,26 +222,38 @@ export default function CheckoutPage() {
                     }}
                     onApprove={async (data, actions) => {
                       setIsProcessing(true);
-                      const details = await actions.order?.capture();
-                      if (details && details.status === "COMPLETED") {
-                        try {
+                      try {
+                        const details = await actions.order?.capture();
+                        if (details && details.status === "COMPLETED") {
+                          // 👑 SARE DATA KO BREAK-DOWN KARKE BACKEND KO BHEJ DIYA:
                           await fetch('/api/create-order', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              firstName, lastName, address: fullFormattedAddress,
+                              firstName: firstName,
+                              lastName: lastName,
                               phone: `${selectedCountry?.code} ${phone}`,
-                              country: selectedCountry?.name, cart, orderTotal
+                              email: details.payer?.email_address || "mesyshop1@gmail.com",
+                              streetAddress: streetAddress,
+                              aptSuite: aptSuite,
+                              city: selectedCityName,
+                              state: getStateName(),
+                              zipCode: zipCode,
+                              country: selectedCountry?.name,
+                              countryCode: selectedCountry?.isoCode || "US",
+                              cart: cart,
+                              orderTotal: orderTotal,
+                              paypalOrderId: details.id
                             })
                           });
                           if (clearCart) clearCart();
                           setIsProcessing(false);
-                          
-                          // 👑 AUTO REDIRECT SYSTEM WITH METADATA PIPELINE
                           window.location.href = `/checkout/success?orderId=${details.id}&amount=${orderTotal}`;
-                        } catch (err) {
-                          window.location.href = `/checkout/success?amount=${orderTotal}`;
                         }
+                      } catch (err) {
+                        console.error(err);
+                        setIsProcessing(false);
+                        window.location.href = `/checkout/success?amount=${orderTotal}`;
                       }
                     }}
                   />
@@ -447,7 +460,7 @@ export default function CheckoutPage() {
                         onBlur={() => handleBlur('zipCode')}
                         className={`w-full py-2 px-3 border bg-white rounded-md outline-none text-[11px] font-medium transition-all h-[36px] ${touchedFields.zipCode && formErrors.zipCode ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-neutral-200 focus:border-neutral-950'}`}
                       />
-                      {touchedFields.zipCode && formErrors.zipCode && <span className="text-[9px] text-red-500 block pl-0.5">{formErrors.zipCode}</span>}
+                      {touchedFields.zipCode && formErrors.zipCode && <span className="text-[9px] text-red-500 block pl-0.5">{zipCode}</span>}
                     </div>
 
                   </div>
