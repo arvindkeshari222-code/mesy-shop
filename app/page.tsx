@@ -30,7 +30,7 @@ export default async function Home() {
     const [summerRes, mobileRes, wellnessRes, toysRes, categoriesRes, menRes, womenRes, petsRes] = await Promise.all([
       api.get('products', { category: '47', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
       api.get('products', { category: '44', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
-      api.get('products', { category: '154', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
+      api.get('products', { category: '154,288', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
       api.get('products', { category: '150', per_page: 8, status: 'publish', _fields: 'id,name,price,images', next: { revalidate: 60 } }).catch(() => ({ data: [] })),
       
       // 🔥 MASTER FIX FOR CIRCLES: Added timestamp to break WordPress cache & dropped revalidate to 10s
